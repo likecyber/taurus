@@ -11,6 +11,9 @@
 // vertical list of titled rows.
 void SGAlphaIndexNoteRow(UIView *row);
 
+// The playlist's sorting adapter (FTPSortingAdapterImpl), so the index can put the list in Title order.
+void SGAlphaIndexNoteSortAdapter(id adapter);
+
 // The letter a title is filed under: A to Z with accents and case folded, # for digits and every other script.
 NSString *SGAlphaIndexLetter(NSString *title);
 

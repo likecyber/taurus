@@ -1,20 +1,22 @@
 // Home redesign: the header the way the Music app has it. The filter pills (All, Music, Podcasts) go and
-// a large title takes their place at the leading edge; the avatar that opens the side drawer moves to the
-// trailing edge; the scrim Spotify lays behind the header goes too, the soft scroll edge (Kit/SGREdgeEffect.x)
+// a large title takes their place beside the avatar, which keeps the leading edge the way the Library
+// header has it; the scrim Spotify lays behind the header goes too, the soft scroll edge (Kit/SGREdgeEffect.x)
 // being what keeps the title clear of the page scrolling under it, as on every other redesigned page.
 //
-// Tree (trees/clean/home/10.txt:3018-3051): FunkisViewController's view holds a 402x112 UIView around
+// Tree (9.1.90, recorded 2026-10-26): FunkisViewController's view holds a 402x112 UIView around
 // Reprise_LiquidGlassKit LiquidGlass.GradientView (the scrim) and, at {0, 62}, an
 // ElementView<HomeHeaderElement> 402x50 holding HomeHeaderView > UIStackView {0, 8} 402x34 of two arranged
-// views: ListeningActivity_ElementsKit.AdaptiveFaceContainer {16, 0} 32x34 (the avatar,
-// id=Components.UI.SideDrawerButton) and LiquidGlass.LeadingFadeMaskView {48, 1} 354x32 around
-// Home_PillUIKit.PillScrollView.
+// views and the avatar's button: from 9.1.90 the side drawer button (id=Components.UI.SideDrawerButton,
+// a11y "Your profile and settings") is a LegacyUI_ECMCoreKit EncoreButton 32x34 that carries the pulse,
+// the photo and the badge inside it, all its own; Spotify renamed its class from AdaptiveFaceContainer,
+// so the avatar is found by its identifier. The second arranged view is
+// LiquidGlass.LeadingFadeMaskView {48, 1} 354x32 around Home_PillUIKit.PillScrollView.
 //
-// The avatar moves by the stack's layout direction rather than by a frame of ours. Right to left, the stack
-// lays its first view out at the trailing edge itself on every pass, whatever width the face container
-// takes when friends listening show beside the avatar; its leading margin, 16pt, is the one Spotify gives
-// the header in a right to left language. The pills stay in the stack with no alpha rather than hidden,
-// the way the redesign takes any view out of a stack Spotify arranges (Kit/SGRRestyle.h).
+// The avatar sits at the leading edge by the stack's layout direction rather than by a frame of ours. Left
+// to right, the stack lays its first view out at the leading edge itself on every pass, whatever width the
+// button takes when friends listening show inside it; its margin, 16pt, is the one Spotify gives the header
+// in a left to right language. The pills stay in the stack with no alpha rather than hidden, the way the
+// redesign takes any view out of a stack Spotify arranges (Kit/SGRRestyle.h).
 //
 // The title is Spotify's own name for the tab, read off its tab bar item (id=TabBar.Item.Home, 10.txt:3100),
 // so it follows the app's language.
@@ -169,16 +171,17 @@ static void layoutHeader(UIViewController *page) {
     }
     vanish(sg_scrim);
 
-    static Class faceClass;
-    if (!faceClass) faceClass = NSClassFromString(@"_TtC29ListeningActivity_ElementsKit21AdaptiveFaceContainer");
-    UIView *face = nil;
+    // The avatar by its side drawer button's id: Spotify renamed the button's class from
+    // AdaptiveFaceContainer in 9.1.90, and the id (a11y "Your profile and settings") is Spotify's own.
+    UIView *face = SGRFindByIdentifier(stack, @"Components.UI.SideDrawerButton", nil);
+    // Everything else in the stack goes; a part that holds the avatar stays.
     for (UIView *part in stack.arrangedSubviews) {
-        if (faceClass && [part isKindOfClass:faceClass]) face = part;
-        else vanish(part);
+        if (face && [face isDescendantOfView:part]) continue;
+        vanish(part);
     }
     SGRNavbarSetProfilePhotoVisible(face);
-    if (stack.semanticContentAttribute != UISemanticContentAttributeForceRightToLeft) {
-        stack.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+    if (stack.semanticContentAttribute != UISemanticContentAttributeForceLeftToRight) {
+        stack.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
         [stack setNeedsLayout];
     }
     [stack layoutIfNeeded];
@@ -192,9 +195,10 @@ static void layoutHeader(UIViewController *page) {
     UIFont *font = SGRFont(UIFontTextStyleLargeTitle, UIFontWeightBold, UIContentSizeCategoryLarge);
     if (![title.font isEqual:font]) title.font = font;
 
-    CGFloat trailing = face ? CGRectGetMinX([stack convertRect:face.frame toView:header]) - SGRGrid : header.bounds.size.width - SGRSideMargin;
+    // The avatar keeps the leading edge, as in the Library header; the title starts after it.
+    CGFloat leading = face ? CGRectGetMaxX(SGFrameIn(face, header)) + SGRGrid : SGRSideMargin;
     CGFloat height = ceil(font.lineHeight);
-    CGRect frame = CGRectMake(SGRSideMargin, round(CGRectGetMidY(stack.frame) - height / 2), MAX(0, trailing - SGRSideMargin), height);
+    CGRect frame = CGRectMake(leading, round(CGRectGetMidY(stack.frame) - height / 2), MAX(0, header.bounds.size.width - leading - SGRSideMargin), height);
     if (!CGRectEqualToRect(title.frame, frame)) title.frame = frame;
 
     sg_title = title;
@@ -255,7 +259,6 @@ static void layoutHeader(UIViewController *page) {
     %init;
     SGRequireClasses(@[
         @"_TtC19Home_FunkisPageImpl20FunkisViewController",
-        @"_TtC29ListeningActivity_ElementsKit21AdaptiveFaceContainer",
         @"_TtC16Home_CarouselKit29TouchCancellingCollectionView",
     ]);
 }

@@ -227,6 +227,13 @@ static UIVisualEffectView *glassView(UIColor *tint) {
     if (self.superview != host) [host addSubview:self];
     else if (host.subviews.lastObject != self) [host bringSubviewToFront:self];
     if (!CGRectEqualToRect(self.frame, frame)) self.frame = frame;
+    static BOOL loggedGeometry;
+    if (!loggedGeometry) {
+        loggedGeometry = YES;
+        SGLog(@"alpha index: strip %@ at %@, list %@ insets %.0f/%.0f, free %.0f, content %.0f",
+              show ? @"shown" : @"hidden", NSStringFromCGRect(frame), NSStringFromCGRect(list.frame),
+              inset.top, inset.bottom, free, list.contentSize.height);
+    }
     if (show && !_scanning) [self wake];
 }
 
@@ -440,6 +447,104 @@ static UIVisualEffectView *glassView(UIColor *tint) {
 
 @end
 
+#pragma mark - sorting the list for the letters
+
+// The letters only line up with a list in Title order, so with the index on the playlist is put in Spotify's
+// own Title order: its sorting adapter's rules are asked for the one the log shows for Title, ascending, and
+// that rule is selected, once per adapter. Spotify calls -init on the adapter as a page opens, so the last one
+// seen is taken as the open page's; a page kept under another (A below B) may sort B's adapter instead
+// (shortcut: bind through the page's own ivars when Spotify exposes them).
+static __weak id sg_sortAdapter;
+static __weak UICollectionView *sg_lastPlaylistList;
+static char kSortSeenKey;
+
+static BOOL responds(id object, NSString *selector) {
+    return [object respondsToSelector:NSSelectorFromString(selector)];
+}
+
+// Spotify's sort rules are private objects: every read is guarded and may say nothing at all.
+static id safeValue(id object, NSString *key) {
+    if (!responds(object, key)) return nil;
+    @try {
+        return [object valueForKey:key];
+    } @catch (NSException *exception) {
+        return nil;
+    }
+}
+
+static id titleRule(id adapter) {
+    NSArray *rules = safeValue(adapter, @"availableSortRules");
+    for (int pass = 0; pass < 2; pass++) {
+        for (id rule in rules) {
+            NSString *identifier = [safeValue(rule, @"identifier") description].lowercaseString;
+            NSString *title = [safeValue(rule, @"title") description].lowercaseString;
+            BOOL named = pass == 0 ? ([identifier isEqualToString:@"title"] || [title isEqualToString:@"title"])
+                                   : (([identifier containsString:@"title"] || [identifier containsString:@"name"]) &&
+                                      ![identifier containsString:@"artist"] && ![identifier containsString:@"album"] &&
+                                      ![identifier containsString:@"release"]);
+            if (named && [safeValue(rule, @"ascendingOrder") boolValue]) return rule;
+        }
+    }
+    return nil;
+}
+
+static void sortByTitle(id adapter) {
+    if (!adapter || !SGEnabled(SGKeyAlphaIndex)) return;
+    if (!responds(adapter, @"availableSortRules") || !responds(adapter, @"selectedSortRule") ||
+        !responds(adapter, @"setSelectedSortRule:")) return;
+    id selected = safeValue(adapter, @"selectedSortRule");
+    // Each selection the user makes is weighed once; going back to the list's own order is weighed again.
+    id seen = objc_getAssociatedObject(adapter, &kSortSeenKey);
+    if (seen && selected && [seen isEqual:selected]) return;
+    if (selected) objc_setAssociatedObject(adapter, &kSortSeenKey, selected, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    NSString *selectedID = ([[safeValue(selected, @"identifier") description] lowercaseString]) ?: @"";
+    NSString *selectedTitle = ([[safeValue(selected, @"title") description] lowercaseString]) ?: @"";
+    static BOOL loggedRules;
+    if (!loggedRules) {
+        loggedRules = YES;
+        NSMutableString *rules = [NSMutableString string];
+        for (id rule in safeValue(adapter, @"availableSortRules")) {
+            [rules appendFormat:@"\n  %@ · %@ · ascending %@", safeValue(rule, @"title"), safeValue(rule, @"identifier"),
+             [safeValue(rule, @"ascendingOrder") boolValue] ? @"yes" : @"no"];
+        }
+        SGLog(@"alpha index: sorting the playlist, rules:%@\nselected: %@ · %@",
+              rules, safeValue(selected, @"title"), safeValue(selected, @"identifier"));
+    }
+    // A sort the user picked (Artist, Album, Recently added...) is theirs and stays: only a list in its own
+    // order, or one whose rule cannot be read at all, is put in Title order - the one the letters read.
+    BOOL readable = selectedID.length || selectedTitle.length;
+    NSString *selectedWords = [selectedID stringByAppendingFormat:@" %@", selectedTitle];
+    BOOL custom = !readable || [selectedWords containsString:@"unsorted"] || [selectedWords containsString:@"custom"] ||
+                  [selectedWords containsString:@"manual"] || [selectedWords containsString:@"default"];
+    if (!custom) {
+        SGLog(@"alpha index: %@ is the user's sort, left alone", safeValue(selected, @"title"));
+        return;
+    }
+    id chosen = titleRule(adapter);
+    if (!chosen) {
+        SGLog(@"alpha index: no Title rule among them, the list keeps its order");
+        return;
+    }
+    if (selected && [chosen isEqual:selected]) return;
+    @try {
+        [adapter setValue:chosen forKey:@"selectedSortRule"];
+    } @catch (NSException *exception) {
+        SGLog(@"alpha index: sorting failed, %@", exception.reason);
+        return;
+    }
+    SGLog(@"alpha index: sorted by %@ (%@)", safeValue(chosen, @"title"), safeValue(chosen, @"identifier"));
+}
+
+void SGAlphaIndexNoteSortAdapter(id adapter) {
+    if (!adapter) return;
+    sg_sortAdapter = adapter;
+    // An adapter can come after the last row pass: try once the run loop turns, on the page last seen.
+    UICollectionView *list = sg_lastPlaylistList;
+    if (list) dispatch_async(dispatch_get_main_queue(), ^{
+        if (list.window) sortByTitle(sg_sortAdapter);
+    });
+}
+
 #pragma mark - noticing lists
 
 // Whether a list belongs to the playlist page: its view controller is the free tier playlist's.
@@ -480,6 +585,10 @@ static void recheck(UICollectionView *list, NSInteger attempt) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UICollectionView *strong = weak;
         if (!strong) return;
+        if (!SGEnabled(SGKeyAlphaIndex)) {
+            objc_setAssociatedObject(strong, &kPendingKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            return;
+        }
         if (attach(strong) || attempt >= 5) {
             objc_setAssociatedObject(strong, &kPendingKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
             return;
@@ -493,6 +602,11 @@ void SGAlphaIndexNoteRow(UIView *row) {
     UICollectionViewCell *cell = cellOf(row);
     UICollectionView *list = cell ? listOf(cell) : nil;
     if (!list) return;
+    // Per pass, so a playlist sorts whatever its length and whether the adapter arrived before or after the rows.
+    if (inPlaylistPage(list)) {
+        sg_lastPlaylistList = list;
+        sortByTitle(sg_sortAdapter);
+    }
     SGAlphaIndexBar *bar = objc_getAssociatedObject(list, &kBarKey);
     if (bar) {
         [bar noteCell:cell];
