@@ -157,7 +157,9 @@ Shared:
                   background URL session, checks each against a size and a SHA-256 pinned in the code, and moves
                   them into Application Support/spoti.pw/Sing only when all are right (SingModel.x reconnects at
                   launch). Karaoke can optionally ignore thermal and memory warnings; the default retains both
-                  safeguards. Tested against harness/sing/ (the download against a local server, model_test.py)
+                  safeguards. AirPlay remains local playback and is processed after its route change; Spotify
+                  Connect, whose audio plays on another device, is not. Tested against harness/sing/ (the download
+                  against a local server, model_test.py)
                   Spatial voice can place the vocals relative to head motion, with distance, room, and instrument
                   width controls under Karaoke; it stays off until enabled and yields to spatial audio on the route.
     Player/       the player's open and close announced (PlayerEvents.x), what the player is doing read through

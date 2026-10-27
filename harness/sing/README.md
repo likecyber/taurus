@@ -104,9 +104,9 @@ The controller test runs the real lifecycle and stream with deterministic player
 AudioUnit boundaries on an iOS 18 simulator: thermal gating and recovery, drain before retry,
 worker completion before the polling timer, model retention, cancellation while loading,
 preparing while paused before an audio graph exists, waiting a bounded time for the graph after
-Play, keeping 70 % through a loading/track transition, continuing the expected next track and
-repeat-one with the same worker, interruptions, backgrounding, and an explicit Off. It is not a
-live Spotify playback test.
+Play, replacing the audio route while retaining the enabled choice, keeping 70 % through a
+loading/track transition, continuing the expected next track and repeat-one with the same worker,
+interruptions, backgrounding, and an explicit Off. It is not a live Spotify playback test.
 
 The legacy worker test runs the previous local model through the production stream at 44.1 kHz callback cadence,
 checking sample order through activation and a drain back to direct audio, disabling during an

@@ -13,6 +13,22 @@ static uint64_t sourceFrames, naturalBoundary = UINT64_MAX;
 static void *attached;
 static SGAudioSourceProcessor render;
 static struct { void *context; SGStemStatus status; BOOL cancelled; } jobs[24];
+static NSArray *routeOutputs;
+
+@interface SGTestRoute : NSObject
+@property (nonatomic) NSArray *outputs;
+@end
+@implementation SGTestRoute @end
+@interface SGTestPort : NSObject
+@property (nonatomic) NSString *portType;
+@end
+@implementation SGTestPort @end
+static id currentRoute(id self, SEL command) {
+    static SGTestRoute *route;
+    if (!route) route = [SGTestRoute new];
+    route.outputs = routeOutputs ?: @[];
+    return route;
+}
 
 @implementation SPTPlayerTrack
 - (id)URI { return trackURI; }
@@ -87,6 +103,9 @@ int main(void) { @autoreleasepool {
     Class infoClass = object_getClass(NSProcessInfo.processInfo);
     Method getter = class_getInstanceMethod(infoClass, @selector(thermalState));
     class_replaceMethod(infoClass, @selector(thermalState), (IMP)thermal, method_getTypeEncoding(getter));
+    Class sessionClass = object_getClass(AVAudioSession.sharedInstance);
+    Method routeGetter = class_getInstanceMethod(sessionClass, @selector(currentRoute));
+    class_replaceMethod(sessionClass, @selector(currentRoute), (IMP)currentRoute, method_getTypeEncoding(routeGetter));
     player = [SPTPlayerState new];
     assert(!SGSingAvailable());
     SGSingConfigure(YES);
@@ -438,5 +457,26 @@ int main(void) { @autoreleasepool {
     assert(SGSingCurrentState() == SGSingReady);
     SGSingSetEnabled(NO); report(job + 2, SGStemFinished);
     assert(!attached && !sg_controller.session && starts == cancels);
-    puts("sing controller: thermal gating, retirement races, concurrent cold preparation, next-track/repeat continuity, retained 70%, explicit Off, the switch and the model coming and going passed");
+    // AirPlay is a local AVAudioSession route. A route replacement retires the old generation,
+    // preserves the user's intent, and attaches a fresh worker once Spotify's graph is ready.
+    paused = NO;
+    SGTestPort *airPlay = [SGTestPort new]; airPlay.portType = AVAudioSessionPortAirPlay;
+    routeOutputs = @[airPlay];
+    assert(![sg_controller restriction]);
+    unsigned routeJob = starts;
+    SGSingSetEnabled(YES); report(routeJob, SGStemReady);
+    assert(attached && SGSingEnabled() && SGSingCurrentState() == SGSingPreparing);
+    NSNotification *routeNote = [NSNotification notificationWithName:AVAudioSessionRouteChangeNotification object:nil
+        userInfo:@{AVAudioSessionRouteChangeReasonKey: @(AVAudioSessionRouteChangeReasonNewDeviceAvailable)}];
+    [sg_controller route:routeNote]; flush();
+    assert(!attached && SGSingEnabled() && sg_controller.retired.count == 1 && starts == routeJob + 1);
+    report(routeJob, SGStemFinished);
+    assert(sg_controller.retired.count == 0 && starts == routeJob + 2 && SGSingCurrentState() == SGSingPreparing);
+    report(routeJob + 1, SGStemReady);
+    assert(attached && SGSingEnabled());
+    paused = YES; [sg_controller reconcile];
+    SGSingSetEnabled(NO); report(routeJob + 1, SGStemFinished);
+    routeOutputs = nil;
+    assert(!attached && !sg_controller.session && starts == cancels);
+    puts("sing controller: thermal gating, retirement races, route replacement, concurrent cold preparation, next-track/repeat continuity, retained 70%, explicit Off, the switch and the model coming and going passed");
 } return 0; }
