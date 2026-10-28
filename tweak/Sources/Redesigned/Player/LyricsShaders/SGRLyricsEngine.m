@@ -267,7 +267,7 @@ static NSDictionary *builtinInfo(NSInteger which) {
     return @{
         @"identifier": config->identifier,
         @"name": config->name,
-        @"detail": [NSString stringWithUTF8String:config->detail],
+        @"detail": config->detail,
         @"author": @"",
         @"fps": @60,
         @"scale": @0.65,
@@ -968,11 +968,11 @@ static void fillFrame(SGRLyricsFrameRec *frame, CGSize pixels, CGFloat pxPerPt, 
         accent[0] = (float)red; accent[1] = (float)green; accent[2] = (float)blue;
     }
     for (NSInteger c = 0; c < 4; c++) frame->accent[c] = accent[c];
-    colorInto(frame->color0, nil, accent[0], accent[1], accent[2]);
-    colorInto(frame->color1, sung, 1, 1, 1);
-    colorInto(frame->color2, unsung, 1, 1, 1);
-    colorInto(frame->sungColor, sung, 1, 1, 1);
-    colorInto(frame->unsungColor, unsung, 1, 1, 1);
+    colorInto((float *)&frame->color0, nil, accent[0], accent[1], accent[2]);
+    colorInto((float *)&frame->color1, sung, 1, 1, 1);
+    colorInto((float *)&frame->color2, unsung, 1, 1, 1);
+    colorInto((float *)&frame->sungColor, sung, 1, 1, 1);
+    colorInto((float *)&frame->unsungColor, unsung, 1, 1, 1);
     frame->key[0] = frame->color0;
     frame->key[1] = frame->color1;
     frame->key[2] = frame->color2;
@@ -1091,7 +1091,7 @@ static void encodeFeed(id<MTLCommandBuffer> buffer, id<MTLTexture> target, SGRLy
         [encoder setFragmentTexture:set->glyph atIndex:0];
         [encoder setFragmentTexture:set->word atIndex:1];
         [encoder setFragmentTexture:set->linedata[i] atIndex:2];
-        [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexCount:4];
+        [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
     }
     [encoder endEncoding];
 }
