@@ -38,8 +38,8 @@ static NSArray<NSDictionary *> *snapshot(void) {
                @"sha256": @"f7ee4ec9b5cc1c97171bd5aad93af61e183aa0db1451ef3b775bd4e77f0b7cfd" },
             @{ @"path": @"coremldata.bin", @"size": @507,
                @"sha256": @"2090acaf7a6df72ec83857cb88d101654023a6baad222a25d0173827d3347e28" },
-            @{ @"path": @"metadata.json", @"size": @2803,
-               @"sha256": @"8f0fc20ff2ee448e3e306b0b14f3a670b38b828824dec7279cc5017290ce8d1e" },
+            @{ @"path": @"metadata.json", @"size": @2431,
+               @"sha256": @"52a8d5e3f09e33236d495dbed5bbce1c75bac6f2a6b6097637cf214f37c1de53" },
             @{ @"path": @"model.mil", @"size": @669061,
                @"sha256": @"966560ed5125174a98f19b94f5de04450a7112ade0e731f2236c202c0280a623" },
             @{ @"path": @"weights/weight.bin", @"size": @488986336,
@@ -50,8 +50,8 @@ static NSArray<NSDictionary *> *snapshot(void) {
                @"sha256": @"7e364c0350456bdff703125ab2ac79c779341ffd61d4eb4e988cc8c32486c518" },
             @{ @"path": @"coremldata.bin", @"size": @462,
                @"sha256": @"18a6a90cc596b43f2508f44423957d3bbffc94d45b8184b963f6086cbc055f77" },
-            @{ @"path": @"metadata.json", @"size": @2577,
-               @"sha256": @"3a65ad7f10ad49f45a29f97186149665d8af6733053cb7da1cb09b9ab7f2693f" },
+            @{ @"path": @"metadata.json", @"size": @2225,
+               @"sha256": @"99bba97984cc77c37271c8441f3c89148a83c3088ae657cc7b8e99561879b16d" },
             @{ @"path": @"model.mil", @"size": @104543,
                @"sha256": @"a0d3c8e9cb8d99db81f54c6f5dc22a0ff835510113d7685d89c0ad8b16922d76" },
             @{ @"path": @"weights/weight.bin", @"size": @39302336,
@@ -80,13 +80,13 @@ static NSTimeInterval sg_lastPost;
 
 #pragma mark - the files
 
-// The first mirrored catalog counted metadata.json characters instead of UTF-8 bytes. Its hashes are
-// the hashes of these files, so correct those two exact entries before a kept/server catalog can replace
-// the compiled snapshot with the stale sizes.
+// The first mirrored catalog counted metadata.json characters instead of UTF-8 bytes and pinned
+// per-download hashes. A kept catalog carrying those stale entries is corrected to the real byte
+// sizes here; the snapshot and anything the server sends today already carry them.
 static int64_t correctedSize(NSString *path, NSString *sha, int64_t size) {
     if (![path isEqualToString:@"metadata.json"]) return size;
-    if ([sha isEqualToString:@"8f0fc20ff2ee448e3e306b0b14f3a670b38b828824dec7279cc5017290ce8d1e"]) return 2803;
-    if ([sha isEqualToString:@"3a65ad7f10ad49f45a29f97186149665d8af6733053cb7da1cb09b9ab7f2693f"]) return 2577;
+    if ([sha isEqualToString:@"8f0fc20ff2ee448e3e306b0b14f3a670b38b828824dec7279cc5017290ce8d1e"]) return 2431;
+    if ([sha isEqualToString:@"3a65ad7f10ad49f45a29f97186149665d8af6733053cb7da1cb09b9ab7f2693f"]) return 2225;
     return size;
 }
 
