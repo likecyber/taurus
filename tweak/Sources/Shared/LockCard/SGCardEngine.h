@@ -7,7 +7,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 // the chosen style, read at render time; the same constant SGCardCore.m defines
-#define SGKeyLockCardStyle "spotifyglass.lockCard.style"
+#define SGKeyLockCardStyle @"spotifyglass.lockCard.style"
 
 // posted when SGLockCardSetStyle stores a new id; the picker and the preview re-read
 extern NSNotificationName const SGLockCardStyleDidChangeNotification;

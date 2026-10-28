@@ -6,6 +6,7 @@
 #import "Settings/SGSourcesPage.h"
 #import "AnimatedArtwork.h"
 #import "Shared/LockCard/SGCardEngine.h"
+#import "Shared/Catalog/SGCatalog.h"
 #import "Shared/LockScreenArtwork/LockScreenArtwork.h"
 #import "Shared/LockScreenLyrics/LockScreenLyrics.h"
 
