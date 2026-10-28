@@ -1,6 +1,7 @@
 #import "LyricsShaderSettings.h"
 #import "Redesigned/Player/LyricsShaders/LyricsShaders.h"
 #import "Core/SGCore.h"
+#import "Settings/SGPageStyle.h"
 #import "Shared/Catalog/SGCatalog.h"
 
 static NSArray<NSDictionary *> *allInfos(void) {
@@ -124,7 +125,7 @@ static NSString *cacheState(NSString *identifier) {
         remove.refreshOn = SGRLyricsShaderDidChangeNotification;
         [rows addObject:remove];
     }
-    SGModRow *params = SGPageRow(@"Parameters", ^UIViewController *{ return [[SGLyricsShaderParamsPage alloc] initWithIdentifier:identifier]; });
+    SGModRow *params = SGPageRow(@"Parameters", ^UIViewController *{ return [[SGRLyricsShaderParamsPage alloc] initWithIdentifier:identifier]; });
     params.visible = ^BOOL { return [info[@"params"] isKindOfClass:NSArray.class] && [info[@"params"] count] > 0; };
     [rows addObject:params];
     NSString *detail = info[@"detail"] ?: @"";
@@ -189,7 +190,7 @@ static NSString *cacheState(NSString *identifier) {
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *info = [self shown][(NSUInteger)indexPath.row];
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    [self.navigationController pushViewController:[[SGLyricsShaderDetailPage alloc] initWithInfo:info] animated:YES];
+    [self.navigationController pushViewController:[[SGRLyricsShaderDetailPage alloc] initWithInfo:info] animated:YES];
 }
 @end
 
@@ -202,7 +203,7 @@ static NSArray<NSDictionary *> *catalogOnly(void) {
 static UIViewController *pickerPage(NSString *title, BOOL catalog) {
     NSArray *infos = catalog ? catalogOnly() : allInfos();
     SGModPage *page = [[SGModPage alloc] initWithTitle:title intro:nil sections:@[
-        SGSection(nil, @[SGPageRow(@"Browse and search", ^UIViewController *{ return [[SGLyricsShaderBrowserPage alloc] initWithTitle:title infos:infos myOnly:NO]; })])
+        SGSection(nil, @[SGPageRow(@"Browse and search", ^UIViewController *{ return [[SGRLyricsShaderBrowserPage alloc] initWithTitle:title infos:infos myOnly:NO]; })])
     ] footer:nil];
     return page;
 }
@@ -214,9 +215,9 @@ SGModRow *SGRLyricsShaderLookRow(void) {
 }
 
 SGModRow *SGRLyricsShaderBrowseRow(void) {
-    return SGPageRow(@"Browse shaders", ^UIViewController *{ return [[SGLyricsShaderBrowserPage alloc] initWithTitle:@"Browse shaders" infos:catalogOnly() myOnly:NO]; });
+    return SGPageRow(@"Browse shaders", ^UIViewController *{ return [[SGRLyricsShaderBrowserPage alloc] initWithTitle:@"Browse shaders" infos:catalogOnly() myOnly:NO]; });
 }
 
 SGModRow *SGRLyricsShaderMyRow(void) {
-    return SGPageRow(@"My shaders", ^UIViewController *{ return [[SGLyricsShaderBrowserPage alloc] initWithTitle:@"My shaders" infos:catalogOnly() myOnly:YES]; });
+    return SGPageRow(@"My shaders", ^UIViewController *{ return [[SGRLyricsShaderBrowserPage alloc] initWithTitle:@"My shaders" infos:catalogOnly() myOnly:YES]; });
 }
