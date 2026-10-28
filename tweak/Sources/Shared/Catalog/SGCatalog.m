@@ -10,9 +10,9 @@ typedef struct {
     NSMutableArray<void (^)(id, NSError *)> *waiting;
     BOOL fetching;
     BOOL refetching;
-} SGCatalogFetch;
+} SGCatalogFetchState;
 
-static NSMutableDictionary<NSString *, SGCatalogFetch *> *sg_fetches;
+static NSMutableDictionary<NSString *, SGCatalogFetchState *> *sg_fetches;
 static dispatch_queue_t sg_queue;
 
 static dispatch_queue_t queue(void) {
@@ -76,7 +76,7 @@ static int64_t sizeAt(NSURL *url) {
 }
 
 static BOOL matches(NSURL *url, int64_t size, NSString *sha256) {
-    if (!NSFileManager.defaultManager.fileExistsAtPath:url.path) return NO;
+    if (![NSFileManager.defaultManager fileExistsAtPath:url.path]) return NO;
     if (size > 0 && sizeAt(url) != size) return NO;
     if (sha256.length && ![hexSha256Of(url) isEqualToString:sha256]) return NO;
     return YES;
@@ -99,9 +99,9 @@ static void post(NSString *kind, NSError *error) {
 // The real fetch, run on the catalog queue: one reply shared by everyone waiting, the cached copy
 // handed over at once and the server's copy after it, whichever comes first.
 static void beginFetch(NSString *kind, void (^done)(id, NSError *)) {
-    SGCatalogFetch *fetch = sg_fetches[kind];
+    SGCatalogFetchState *fetch = sg_fetches[kind];
     if (!fetch) {
-        fetch = [SGCatalogFetch new];
+        fetch = [SGCatalogFetchState new];
         fetch.waiting = [NSMutableArray array];
         sg_fetches[kind] = fetch;
     }
