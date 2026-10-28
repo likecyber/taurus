@@ -121,7 +121,10 @@ UIViewController *SGNavbarPage(void) {
 UIViewController *SGLyricsSettingsPage(void) {
     BOOL redesigned = SGRedesignedUIStored();
     SGModRow *card = SGPageRow(@"Lock screen card", ^UIViewController * { return SGLockCardStylesPage(); });
-    card.visible = ^BOOL { return @available(iOS 26.0, *); };
+    card.visible = ^BOOL {
+        if (@available(iOS 26.0, *)) return YES;
+        return NO;
+    };
     NSMutableArray<SGModRow *> *more = [NSMutableArray arrayWithObjects:SGLockScreenLyricsRow(), card, nil];
     if (!redesigned) [more insertObject:SGGlassLyricsRow() atIndex:0];
     NSMutableArray<SGModSection *> *sections = [NSMutableArray arrayWithObject:SGLyricsSourcesSection(redesigned)];

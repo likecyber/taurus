@@ -37,7 +37,7 @@ void SGLockCardRegisterFonts(void);
 // album, prev, prevTime, time, translation, next, nextTime, clock) and words = [{word, i}];
 // safeTop and safeBottom (NSNumber, points) seed --safe-top/--safe-bottom, 59 and 34 by default.
 UIImage * _Nullable SGLockCardRender(NSString *styleID, NSDictionary *data, UIImage * _Nullable cover,
-                                     CGFloat width, CGFloat height, CGFloat scale, NSString ** _Nullable errorOut);
+                                     CGFloat width, CGFloat height, CGFloat scale, NSString * _Nullable * _Nullable errorOut);
 
 // the data a preview renders with, previews and tests alike
 NSDictionary *SGLockCardSampleData(void);

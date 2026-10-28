@@ -31,7 +31,7 @@ void SGLockCardRegisterFonts(void) {
 }
 
 UIImage *SGLockCardRender(NSString *styleID, NSDictionary *data, UIImage *cover,
-                          CGFloat width, CGFloat height, CGFloat scale, NSString **errorOut) {
+                          CGFloat width, CGFloat height, CGFloat scale, NSString * _Nullable * _Nullable errorOut) {
     CGImageRef image = SGCardRenderCG(styleID, data ?: SGLockCardSampleData(),
                                       cover.CGImage, width, height, scale, errorOut);
     if (!image) return nil;
