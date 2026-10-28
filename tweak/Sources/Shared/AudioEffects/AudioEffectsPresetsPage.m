@@ -70,8 +70,10 @@ static NSArray<NSString *> *userPresetNames(void) {
     [[NSNotificationCenter defaultCenter] addObserverForName:SGDSPCommunityChangedNotification object:nil queue:nil
                                                  usingBlock:^(NSNotification *_) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            page->_community = SGDSPCommunityPresets();
-            [page.tableView reloadData];
+            SGDSPPresetList *strongPage = page;
+            if (!strongPage) return;
+            strongPage->_community = SGDSPCommunityPresets();
+            [strongPage.tableView reloadData];
         });
     }];
 }
@@ -193,15 +195,17 @@ static NSArray<NSString *> *userPresetNames(void) {
     __weak SGDSPPresetList *page = self;
     SGDSPCommunityApply(preset, ^(NSString *error) {
         [wait dismissViewControllerAnimated:YES completion:^{
+            SGDSPPresetList *strongPage = page;
+            if (!strongPage) return;
             if (error) {
                 UIAlertController *sorry = [UIAlertController alertControllerWithTitle:@"Could not apply"
                     message:error preferredStyle:UIAlertControllerStyleAlert];
                 [sorry addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-                [page presentViewController:sorry animated:YES completion:nil];
+                [strongPage presentViewController:sorry animated:YES completion:nil];
                 return;
             }
-            page->_picked = nil;   // a community pick is not one of the two lists' ticks
-            [page.tableView reloadData];
+            strongPage->_picked = nil;   // a community pick is not one of the two lists' ticks
+            [strongPage.tableView reloadData];
         }];
     });
 }
