@@ -44,6 +44,11 @@
 #import "Player.h"
 #import "SGRShader.h"
 
+@interface AVPlayerItemVideoOutput (SGRCurrentPixelBuffer)
+- (CVPixelBufferRef _Nullable)copyPixelBufferForItemTime:(CMTime)itemTime
+                                  itemTimeForDisplayTime:(CMTime * _Nullable)displayTime;
+@end
+
 NSNotificationName const SGRPlayerBlurOpacityDidChangeNotification = @"spotifyglass.redesign.player.blurOpacityDidChange";
 static NSString *const kLyricsBlurByTrackKey = @"spotifyglass.redesign.player.lyricsBlurByTrack";
 // The clip output of the view playing now, for the shaders' clip input (SGRShader.h's provider).
