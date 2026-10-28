@@ -145,9 +145,9 @@ static uint32_t seedOf(NSString *text) {
 }
 
 // The clip provider installed once for every view (PlayerMotion.x sets it at launch).
-static CVPixelBufferRef (^sg_clipProvider)(void);
+static CVPixelBufferRef _Nullable (^sg_clipProvider)(void);
 
-void SGRShaderSetClipPixelBufferProvider(CVPixelBufferRef _Nullable (^)(void) provider) {
+void SGRShaderSetClipPixelBufferProvider(CVPixelBufferRef _Nullable (^ _Nullable provider)(void)) {
     sg_clipProvider = [provider copy];
 }
 

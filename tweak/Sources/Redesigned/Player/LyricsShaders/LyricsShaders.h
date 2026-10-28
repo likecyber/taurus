@@ -13,6 +13,8 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import <Metal/Metal.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 // Posted on the main queue when the catalog's lyrics-shaders arrived, fresh or unchanged.
 extern NSNotificationName const SGRLyricsShaderDidChangeNotification;
 
@@ -30,7 +32,7 @@ NSString *SGRLyricsBuiltinSource(NSInteger index);
 
 // A style's Metal source: the compiled-in ones at once, a catalog entry fetched on the first
 // ask and kept. `done` runs on the main queue, with nil when it could not be had.
-void SGRLyricsShaderLoadSource(NSString *identifier, void (^done)(NSString *msl, NSDictionary *manifest));
+void SGRLyricsShaderLoadSource(NSString *identifier, void (^done)(NSString * _Nullable msl, NSDictionary * _Nullable manifest));
 
 // The style the engine typesets and lays out for: an identifier from the infos. Poster until
 // set. The font, case and tracking follow the style, so switch before the player shows it.
@@ -53,12 +55,12 @@ void SGRLyricsShaderUseDevice(id<MTLDevice> device, id<MTLCommandQueue> queue);
 // `params` may carry safeArea (NSValue-edged UIEdgeInsets) and column (NSValue CGRect) in
 // points; nil takes the defaults. Call after SGRLyricsShaderUpdate, before the style pass.
 void SGRLyricsShaderDraw(id<MTLCommandBuffer> buffer, id<MTLTexture> intoTexture, CGSize size,
-                         NSDictionary *params);
+                         NSDictionary * _Nullable params);
 
 // A catalog lyrics style has the line/background ABI, not the player shader ABI. Compile its
 // renamed source here, then draw its optional background and its typeset column into `target`.
 BOOL SGRLyricsShaderBuildCatalogStyle(NSString *identifier, NSString *source, MTLPixelFormat format,
-                                      NSString **failure);
+                                      NSString * _Nullable * _Nullable failure);
 void SGRLyricsShaderDrawCatalogStyle(id<MTLCommandBuffer> buffer, id<MTLTexture> target, CGSize size,
                                      id<MTLTexture> artwork, id<MTLTexture> sound,
                                      id<MTLTexture> previous);
@@ -90,7 +92,9 @@ void SGRLyricsShaderSetParamValue(NSString *identifier, NSString *paramID, id va
 // Catalog lifecycle for Lyrics settings. The source file is the cache's <uuid>.json.
 BOOL SGRLyricsShaderIsCatalogIdentifier(NSString *identifier);
 BOOL SGRLyricsShaderIsDownloaded(NSString *identifier);
-void SGRLyricsShaderDownload(NSString *identifier, void (^done)(NSError *error));
+void SGRLyricsShaderDownload(NSString *identifier, void (^done)(NSError * _Nullable error));
 void SGRLyricsShaderRemove(NSString *identifier);
 BOOL SGRLyricsShaderIsFavourite(NSString *identifier);
 void SGRLyricsShaderSetFavourite(NSString *identifier, BOOL favourite);
+
+NS_ASSUME_NONNULL_END
