@@ -132,7 +132,7 @@ static void mustacheRenderNode(SGCMNode *node, NSMutableArray<NSDictionary *> *s
     }
     id value = sectionValue(scopes, node.name);
     BOOL truthy = NO;
-    if ([value isKindOfClass:NSString.class]) truthy = value.length > 0 && ![value isEqualToString:@"0"];
+    if ([value isKindOfClass:NSString.class]) truthy = [(NSString *)value length] > 0 && ![(NSString *)value isEqualToString:@"0"];
     else if ([value isKindOfClass:NSArray.class]) truthy = [(NSArray *)value count] > 0;
     else if ([value isKindOfClass:NSDictionary.class]) truthy = YES;
     else if ([value isKindOfClass:NSNumber.class]) truthy = [value doubleValue] != 0;
@@ -211,7 +211,9 @@ static NSString *decodeEntities(NSString *text) {
             unsigned value = 0;
             NSScanner *scanner = [NSScanner scannerWithString:name];
             [scanner setScanLocation:1];
-            if ([scanner scanUnsignedInt:&value] && value <= 0xFFFF) {
+            unsigned long long parsed = 0;
+            if ([scanner scanHexLongLong:&parsed] && parsed <= 0xFFFF) {
+                value = (unsigned)parsed;
                 replacement = [NSString stringWithFormat:@"%C", (unichar)value];
             }
         } else {
@@ -291,7 +293,7 @@ SGCBox *SGCParseHTML(NSString *html, NSMutableArray<NSString *> *warnings) {
             NSUInteger at = NSNotFound;
             for (NSUInteger k = stack.count; k-- > 1;)
                 if ([stack[k].tag isEqualToString:name]) { at = k; break; }
-            if (at != NSNotFound) [stack removeObjectsFromIndex:at];
+            if (at != NSNotFound) [stack removeObjectsInRange:NSMakeRange(at, stack.count - at)];
             continue;
         }
 

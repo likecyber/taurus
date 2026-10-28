@@ -4,6 +4,7 @@
 // bitmap. Everything here is Core Graphics; the UIKit wrapper and the settings page sit on top.
 #import "SGCardPrivate.h"
 #import "Shared/Catalog/SGCatalog.h"
+#import "Shared/Fonts/FontCatalog.h"
 
 extern void SGLogMessage(NSString *message);
 #define SGLog(fmt, ...) SGLogMessage([NSString stringWithFormat:(fmt), ##__VA_ARGS__])
@@ -91,12 +92,13 @@ NSArray<NSDictionary *> *SGCCoreTakeCatalog(id json) {
         if (!identifier.length || !css.length || css.length > 64 * 1024) continue;
         NSMutableDictionary *style = [NSMutableDictionary dictionary];
         style[@"id"] = [@"catalog:" stringByAppendingString:identifier];
-        style[@"name"] = [entry[@"name"] isKindOfClass:NSString.class] && entry[@"name"].length ? entry[@"name"] : identifier;
+        NSString *entryName = [entry[@"name"] isKindOfClass:NSString.class] ? entry[@"name"] : nil;
+        style[@"name"] = entryName.length ? entryName : identifier;
         style[@"author"] = [entry[@"author"] isKindOfClass:NSString.class] ? entry[@"author"] : @"";
         style[@"fonts"] = [entry[@"fonts"] isKindOfClass:NSArray.class] ? entry[@"fonts"] : @[];
         style[@"css"] = css;
-        if ([entry[@"template"] isKindOfClass:NSString.class] && entry[@"template"].length)
-            style[@"template"] = entry[@"template"];
+        NSString *entryTemplate = [entry[@"template"] isKindOfClass:NSString.class] ? entry[@"template"] : nil;
+        if (entryTemplate.length) style[@"template"] = entryTemplate;
         [styles addObject:style];
     }
     return styles;
@@ -146,9 +148,9 @@ void SGCCoreRegisterFontsForStyle(NSString *styleID) {
         if (![family isKindOfClass:NSString.class]) continue;
         if (SGFontCatalogHasFamily(family)) continue;
         // the entry's download is async; until it lands the render falls back to the next family
-        for (id entry in SGFontCatalogEntries())
+        for (SGFontCatalogEntry *entry in SGFontCatalogEntries())
             if ([entry.familyName caseInsensitiveCompare:family] == NSOrderedSame) {
-                [entry performSelector:@selector(download)];
+                [entry download];
                 break;
             }
     }
@@ -191,8 +193,8 @@ static void extentOfBox(SGCBox *box, CGPoint offset, CGFloat *out) {
     for (SGCBox *child in box.children) extentOfBox(child, here, out);
 }
 
-CGImageRef SGCardRenderCG(NSString *styleID, NSDictionary *data, CGImageRef cover,
-                          CGFloat width, CGFloat height, CGFloat scale, NSString **errorOut) {
+CGImageRef _Nullable SGCardRenderCG(NSString *styleID, NSDictionary *data, CGImageRef _Nullable cover,
+                          CGFloat width, CGFloat height, CGFloat scale, NSString * _Nullable * _Nullable errorOut) {
     NSDictionary *style = styleWithID(styleID);
     if (!style) {
         if (errorOut) *errorOut = [NSString stringWithFormat:@"no style named %@", styleID ?: @""];
@@ -256,7 +258,7 @@ CGImageRef SGCardRenderCG(NSString *styleID, NSDictionary *data, CGImageRef cove
         SGCCascade(root, rules, vars, env);
         SGCLayoutTree(root, env);
 
-        SGCBox *line = nil;
+        __block SGCBox *line = nil;
         [root walk:^(SGCBox *box, SGCBox *parent) {
             if (line || !box.style || box.style.display == SGCDisplayNone) return;
             if ([box.classList containsObject:@"line"]) line = box;

@@ -536,7 +536,7 @@ CGColorRef SGCColor(NSArray<SGCTok *> *tokens, CGColorRef currentColor) {
 }
 
 BOOL SGCColorStop(NSArray<SGCTok *> *tokens, SGCLenCtx ctx, CGFloat base,
-                  CGColorRef *_Nullable colorOut, CGFloat *_Nullable firstOut, CGFloat *_Nullable secondOut) {
+                  CGColorRef _Nullable * _Nullable colorOut, CGFloat * _Nullable firstOut, CGFloat * _Nullable secondOut) {
     NSMutableArray<SGCTok *> *color = [NSMutableArray array], *positions = [NSMutableArray array];
     for (SGCTok *t in tokens) {
         if (t.type == SGCTokPercent || t.type == SGCTokDimension || t.type == SGCTokNumber) [positions addObject:t];

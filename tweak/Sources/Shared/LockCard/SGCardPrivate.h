@@ -3,6 +3,7 @@
 // here imports UIKit -- the whole pipeline runs on Core Graphics and Core Text, so the Mac
 // harness compiles every file except the UIKit wrapper and the settings page.
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #import <CoreText/CoreText.h>
 #import <CoreGraphics/CoreGraphics.h>
 
@@ -11,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 // the render entry the UIKit wrapper and the harness both call. width and height are points,
 // scale the backing pixel density; nil plus a reason on failure.
 CGImageRef _Nullable SGCardRenderCG(NSString *styleID, NSDictionary *data, CGImageRef _Nullable cover,
-                                    CGFloat width, CGFloat height, CGFloat scale, NSString **_Nullable errorOut);
+                                    CGFloat width, CGFloat height, CGFloat scale, NSString * _Nullable * _Nullable errorOut);
 
 // the styles by id, the same shape the picker reads: id, name, author, fonts (array), css,
 // and template where the catalog one carries its own. ids are "builtin:classic",
@@ -66,6 +67,7 @@ typedef struct {
 
 // Resolves one length: returns whether it was a length at all. A bare number counts as a
 // length of 0 where a property never takes bare numbers; SGCNumber reads those.
+double SGLengthValue(double number, NSString *unit, SGCLenCtx ctx);
 BOOL SGCLength(NSArray<SGCTok *> *tokens, SGCLenCtx ctx, CGFloat *out);
 // calc() aware, numbers only (var(--fit), ratios).
 BOOL SGCNumber(NSArray<SGCTok *> *tokens, SGCLenCtx ctx, double *out);
@@ -78,7 +80,7 @@ CGColorRef _Nullable SGCColorFuncRGB(NSArray<SGCTok *> *args);
 CGColorRef _Nullable SGCColorMix(NSArray<SGCTok *> *args, CGColorRef _Nullable currentColor);
 // One gradient stop's tokens: a colour, then one or two positions. Appends to the arrays.
 BOOL SGCColorStop(NSArray<SGCTok *> *tokens, SGCLenCtx ctx, CGFloat base,
-                  CGColorRef *_Nullable colorOut, CGFloat *_Nullable firstOut, CGFloat *_Nullable secondOut);
+                  CGColorRef _Nullable * _Nullable colorOut, CGFloat * _Nullable firstOut, CGFloat * _Nullable secondOut);
 // Splits a token list on top-level commas: gradient stops, family lists, :is groups.
 NSArray<NSArray<SGCTok *> *> *SGCSplitCommas(NSArray<SGCTok *> *tokens);
 // Unwraps one bare paren group the tokenizer made of ( ... ), else the list unchanged.
@@ -225,12 +227,12 @@ typedef NS_ENUM(uint8_t, SGCTextForm) { SGCTextAsIs = 0, SGCTextUpper, SGCTextLo
 
 @interface SGCTextShadow : NSObject
 @property CGFloat dx, dy, blur;
-@property (strong) CGColorRef color;
+@property CGColorRef _Nullable color;
 @end
 
 @interface SGCBoxShadow : NSObject
 @property CGFloat dx, dy, blur, spread;
-@property (strong) CGColorRef color;
+@property CGColorRef _Nullable color;
 @property BOOL inset;
 @end
 
@@ -276,22 +278,22 @@ typedef NS_ENUM(uint8_t, SGCTextForm) { SGCTextAsIs = 0, SGCTextUpper, SGCTextLo
 @property CGFloat basis;
 @property NSInteger order;
 // text
-@property (strong) CTFontRef font;
+@property CTFontRef _Nullable font;
 @property CGFloat fontSize, lineHeight;    // lineHeight 0: the font's own
-@property (strong) CGColorRef color;
+@property CGColorRef _Nullable color;
 @property CGFloat letterSpacing;
 @property SGCTextAlign textAlign;
 @property SGCTextForm textForm;
 @property BOOL nowrap, balance, breakWords;
 // paint
-@property (strong) CGColorRef backgroundColor;
+@property CGColorRef _Nullable backgroundColor;
 @property (copy) NSArray<SGCBGLayer *> *bgLayers;
 @property (copy) NSArray<SGCTextShadow *> *textShadows;
 @property (copy) NSArray<SGCBoxShadow *> *boxShadows;
 @property CGFloat radiusTL, radiusTR, radiusBR, radiusBL;   // per corner; with hasPercentRadius these are fractions of the box
 @property BOOL hasPercentRadius;
 @property CGFloat borderTop, borderRight, borderBottom, borderLeft;
-@property (strong) CGColorRef borderColor;
+@property CGColorRef _Nullable borderColor;
 @property char borderStyle;       // 's' solid, 'd' dashed, 0 none
 @property CGFloat opacity;
 @property BOOL overflowHidden, hidden;   // hidden: visibility
@@ -312,25 +314,25 @@ typedef NS_ENUM(uint8_t, SGCTextForm) { SGCTextAsIs = 0, SGCTextUpper, SGCTextLo
 @end
 
 // Ties a +1 Core Foundation reference to a style's lifetime; returns the object back.
-id SGCTakeCF(SGCStyle *style, CFTypeRef ref);
+id _Nullable SGCTakeCF(SGCStyle *style, CFTypeRef _Nullable ref);
 CGColorRef _Nullable SGCStyleColor(SGCStyle *style, CGColorRef _Nullable color);
-CTFontRef SGCStyleFont(SGCStyle *style, CTFontRef font);
+CTFontRef _Nullable SGCStyleFont(SGCStyle *style, CTFontRef _Nullable font);
 
 // What one render carries: the card's geometry, the artwork the --cover marker resolves to,
 // and the warnings the pipeline collects.
 @interface SGCCtx : NSObject
 @property CGFloat cardW, cardH, scale;
-@property (strong) CGImageRef cover;
+@property CGImageRef _Nullable cover;
 @property (copy) NSMutableArray<NSString *> *warnings;
 @property CGFloat safeTop, safeBottom;
-@property (strong) NSMutableDictionary<NSString *, CTFontRef> *fontCache;
+@property (strong) NSMutableDictionary<NSString *, NSValue *> *fontCache;
 @property (strong) id ci;   // a CIContext for this render, made lazily (typed id here to keep UIKit out of the core)
 @end
 
 // A font for a font declaration's family list, weight 100..900, italic, at a size. system-ui
 // maps to the system font, the generic families to fonts the OS carries, and named families to
 // the FontCatalog's when installed.
-CTFontRef SGCFontForFamilies(NSArray<NSString *> *families, CGFloat size, NSInteger weight, BOOL italic);
+CTFontRef _Nullable SGCFontForFamilies(NSArray<NSString *> *families, CGFloat size, NSInteger weight, BOOL italic);
 
 // Parses one gradient function's tokens. Colours are registered on the style so they outlive
 // the parse; positions come back per stop as fractions or points.

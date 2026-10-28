@@ -3,6 +3,7 @@
 // every length resolved against the card. Also the font resolution and the gradient, shadow,
 // filter and clip parsers that the computed style needs.
 #import "SGCardPrivate.h"
+#import "Shared/Fonts/FontCatalog.h"
 
 // The catalog's family check and registration live in FontCatalog.m on the phone; its header
 // imports UIKit, so the two entry points the engine needs are declared here instead.
@@ -10,6 +11,8 @@ extern BOOL SGFontCatalogHasFamily(NSString *family);
 extern void SGFontCatalogRegisterInstalled(void);
 
 #pragma mark - decl ranks
+
+static CGFloat lengthOfToken(SGCTok *token, SGCLenCtx ctx);
 
 @interface SGCDecl ()
 @property NSUInteger rankSpec;
@@ -42,7 +45,7 @@ extern void SGFontCatalogRegisterInstalled(void);
 static CTFontRef fontWithTraits(CTFontRef base, CGFloat size, CTFontSymbolicTraits traits, double weightAxis) {
     if (weightAxis != 0) {
         CTFontDescriptorRef descriptor = CTFontDescriptorCreateWithAttributes(
-            (__bridge CFDictionaryRef)@{(id)kCTFontWeightAttribute: @(weightAxis)});
+            (__bridge CFDictionaryRef)@{(id)kCTFontTraitsAttribute: @{(id)@"CTFontWeightTrait": @(weightAxis)}});
         CTFontRef out = CTFontCreateCopyWithAttributes(base, size, NULL, descriptor);
         CFRelease(descriptor);
         return out;
@@ -92,7 +95,7 @@ static CTFontRef genericFont(NSString *generic, CGFloat size, NSInteger weight, 
     return out;
 }
 
-CTFontRef SGCFontForFamilies(NSArray<NSString *> *families, CGFloat size, NSInteger weight, BOOL italic) {
+CTFontRef _Nullable SGCFontForFamilies(NSArray<NSString *> *families, CGFloat size, NSInteger weight, BOOL italic) {
     if (size <= 0) size = 12;
     for (NSString *raw in families) {
         NSString *family = [raw stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
@@ -132,7 +135,7 @@ CTFontRef SGCFontForFamilies(NSArray<NSString *> *families, CGFloat size, NSInte
 @implementation SGCCtx
 @end
 
-id SGCTakeCF(SGCStyle *style, CFTypeRef ref) {
+id _Nullable SGCTakeCF(SGCStyle *style, CFTypeRef _Nullable ref) {
     if (!ref) return nil;
     if (!style.owned) style.owned = [NSMutableArray array];
     id object = CFBridgingRelease(ref);
@@ -140,12 +143,12 @@ id SGCTakeCF(SGCStyle *style, CFTypeRef ref) {
     return object;
 }
 
-CGColorRef SGCStyleColor(SGCStyle *style, CGColorRef color) {
+CGColorRef _Nullable SGCStyleColor(SGCStyle *style, CGColorRef _Nullable color) {
     if (!color) return NULL;
     return (CGColorRef)CFBridgingRetain(SGCTakeCF(style, color));
 }
 
-CTFontRef SGCStyleFont(SGCStyle *style, CTFontRef font) {
+CTFontRef _Nullable SGCStyleFont(SGCStyle *style, CTFontRef _Nullable font) {
     if (!font) return NULL;
     return (CTFontRef)CFBridgingRetain(SGCTakeCF(style, font));
 }
@@ -635,7 +638,7 @@ static void computeBox(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx c
         else if ([word isEqualToString:@"relative"]) s.position = 1;
     }
 
-    auto lenOf = ^CGFloat(NSString *prop, CGFloat base, BOOL *ok) {
+    CGFloat (^lenOf)(NSString *, CGFloat, BOOL *) = ^CGFloat(NSString *prop, CGFloat base, BOOL *ok) {
         CGFloat value = 0;
         *ok = NO;
         SGCDecl *decl = box.decls[prop];
