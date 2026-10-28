@@ -6,11 +6,14 @@ NSString *const SGCatalogKindKey = @"kind";
 NSString *const SGCatalogErrorKey = @"error";
 
 // One catalog asked for at a time, so a page of rows asking for the same kind shares the reply.
-typedef struct {
-    NSMutableArray<void (^)(id, NSError *)> *waiting;
-    BOOL fetching;
-    BOOL refetching;
-} SGCatalogFetchState;
+@interface SGCatalogFetchState : NSObject
+@property (nonatomic, strong) NSMutableArray<void (^)(id, NSError *)> *waiting;
+@property (nonatomic) BOOL fetching;
+@property (nonatomic) BOOL refetching;
+@end
+
+@implementation SGCatalogFetchState
+@end
 
 static NSMutableDictionary<NSString *, SGCatalogFetchState *> *sg_fetches;
 static dispatch_queue_t sg_queue;
