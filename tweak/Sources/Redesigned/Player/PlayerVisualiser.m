@@ -443,7 +443,7 @@ BOOL SGRPlayerVisualiserShowing(void) {
 // One preview view of each kind, reused: the Player page tears its old one down on every tap of the
 // background control, and each of those teardowns races the display link and the palette read it had
 // just started. A different shader choice hands back a fresh view under the same identifier.
-UIView *SGRPlayerVisualiserPreview(void) {
+UIView<SGRVisualiserShowing> *SGRPlayerVisualiserPreview(void) {
     if (SGRShaderMetalAvailable()) {
         static SGRShaderView *shader;
         if (!shader || ![shader.shader.identifier isEqualToString:SGRShaderChosen().identifier])
