@@ -829,7 +829,8 @@ void SGRPlayerMenuSetBackground(SGRPlayerBackgroundKind kind) {
     // live one in the file-scope static the block reads).
     SGRShaderSetClipPixelBufferProvider(^CVPixelBufferRef {
         AVPlayerItemVideoOutput *output = sg_liveOutput;
-        return output ? [output copyPixelBufferForItemTime:[output itemTimeForHostTime:CACurrentMediaTime()]] : nil;
+        CMTime itemTime = [output itemTimeForHostTime:CACurrentMediaTime()];
+        return output ? [output copyPixelBufferForItemTime:itemTime itemTimeForDisplayTime:NULL] : nil;
     });
     // Here rather than on the clip's view, which is gone while they hold it off: the track is walked again
     // as either changes. The power state is reported off the main thread, which must not wait for main

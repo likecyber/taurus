@@ -9,7 +9,7 @@
 #define SGRKeyVisualiserShaderParams @"spotifyglass.redesign.visualizer.shader.params" // { shader id: { param id: value } }
 #define SGRKeyVisualiserShuffle      @"spotifyglass.redesign.visualizer.shuffle"
 
-extern NSNotificationName const SGRShaderDidChangeNotification;
+extern NSNotificationName const _Nonnull SGRShaderDidChangeNotification;
 
 // One shader of the catalog or one of the compiled-in ones, telling what it is drawn as and what it
 // wants to be fed. The objects are made once and answer for the process's life.
@@ -78,4 +78,4 @@ UIViewController *SGRShaderParamsPage(UIViewController *owner);
 // Where the Canvas clip's frames come from: a block answering the pixel buffer being played now
 // (retained for the caller), or nil when nothing plays. PlayerMotion.x installs its player's output
 // here at launch; the shaders with a "clip" input draw it, and without it they draw the cover.
-void SGRShaderSetClipPixelBufferProvider(CVPixelBufferRef _Nullable (^)(void) provider);
+void SGRShaderSetClipPixelBufferProvider(CVPixelBufferRef _Nullable (^ _Nullable)(void) provider);
