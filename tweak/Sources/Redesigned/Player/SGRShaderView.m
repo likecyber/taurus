@@ -128,7 +128,7 @@ static uint32_t seedOf(NSString *text) {
     NSUInteger _targetAt;
     // The Canvas clip's frames, through the cache.
     CVMetalTextureCacheRef _clipCache;
-    CVMetalTexture _clipTexture;
+    CVMetalTextureRef _clipTexture;
     // The lyrics' blur over everything, as the hills hold theirs.
     UIVisualEffectView *_lyricsBlur;
     UIViewPropertyAnimator *_lyricsBlurAnimator;

@@ -16,12 +16,12 @@ typedef struct {
     CGFloat scale;
 } SGRShaderBuiltin;
 
-static const SGRShaderBuiltin kBuiltins[] = {
+static const SGRShaderBuiltin kBuiltinShaders[] = {
     {@"builtin:bars", @"Bars", @"The spectrum as bars on a mirrored floor, a waveform running through them", 120, 0.8},
     {@"builtin:nebula", @"Nebula", @"A slow cloud of the cover's colours, stirred by the bass", 60, 0.5},
     {@"builtin:halo", @"Halo", @"The cover spinning like a record in a ring of sound", 120, 0.8},
 };
-enum { kBuiltins = sizeof kBuiltins / sizeof kBuiltins[0] };
+enum { kBuiltinShaderCount = sizeof kBuiltinShaders / sizeof kBuiltinShaders[0] };
 
 // The inputs a shader can name and the engine feeds today: its own last frame, the head's tilt, the
 // typeset lyrics and their three-line text strip (Redesigned/Player/LyricsShaders), and the Canvas
@@ -122,7 +122,7 @@ static NSMutableArray *builtinsList(void) {
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         sg_builtins = [NSMutableArray array];
-        for (NSUInteger i = 0; i < kBuiltins; i++) [sg_builtins addObject:[[SGRShaderInfo alloc] initWithBuiltin:&kBuiltins[i]]];
+        for (NSUInteger i = 0; i < kBuiltinShaderCount; i++) [sg_builtins addObject:[[SGRShaderInfo alloc] initWithBuiltin:&kBuiltinShaders[i]]];
         sg_catalog = [NSMutableArray array];
     });
     return sg_builtins;
