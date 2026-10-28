@@ -40,12 +40,12 @@ static const CGFloat SGRLyricsEm = 40.0;
     free(_coverage);
 }
 
-- (const SGRLyricsWordRec *)words count:(NSUInteger *)count {
+- (const SGRLyricsWordRec *)words:(NSUInteger *)count {
     if (count) *count = _wordCount;
     return _words;
 }
 
-- (const SGRLyricsRowRec *)rows count:(NSUInteger *)count {
+- (const SGRLyricsRowRec *)rows:(NSUInteger *)count {
     if (count) *count = _rowCount;
     return _rows;
 }
@@ -174,15 +174,19 @@ static void estimateWords(SGRLyricsWordRec *words, NSUInteger count, SGKaraokeLi
     CGFloat prefix[text.length + 1];
     prefix[0] = 0;
     for (NSUInteger k = 1; k <= text.length; k++) {
-        CTLineRef part = CTLineCreateWithSubstring(attributed, CFRangeMake(0, k));
+        CFAttributedStringRef prefixString = CFAttributedStringCreateWithSubstring(kCFAllocatorDefault, attributed, CFRangeMake(0, k));
+                CTLineRef part = prefixString ? CTLineCreateWithAttributedString(prefixString) : NULL;
+                if (prefixString) CFRelease(prefixString);
         prefix[k] = part ? (CGFloat)CTLineGetTypographicBounds(part, NULL, NULL, NULL) : 0;
         if (part) CFRelease(part);
     }
     CGFloat advance = prefix[text.length];
     CGFloat ascent, descent;
     CTLineGetTypographicBounds(full, &ascent, &descent, NULL);
-    CFRelease(full);
-    if (advance <= 0) return nil;
+    if (advance <= 0) {
+        CFRelease(full);
+        return nil;
+    }
 
     SGRLyricsTypesetLine *out = [SGRLyricsTypesetLine new];
     NSUInteger count = line.words.count;
@@ -233,7 +237,7 @@ static void estimateWords(SGRLyricsWordRec *words, NSUInteger count, SGKaraokeLi
     uint8_t *coverage = calloc(stride * (NSUInteger)height, 1);
     if (!coverage) return nil;
     CGColorSpaceRef grey = CGColorSpaceCreateDeviceGray();
-    CGContextRef ctx = CGBitmapContextCreate(coverage, width, (NSUInteger)height, 8, stride, grey, kCGImageAlphaNone);
+    CGContextRef ctx = CGBitmapContextCreate(coverage, width, (NSUInteger)height, 8, stride, grey, (CGBitmapInfo)kCGImageAlphaNone);
     if (ctx) {
         CGContextSetFillColorWithColor(ctx, UIColor.blackColor.CGColor);
         CGContextFillRect(ctx, CGRectMake(0, 0, width, height));
@@ -249,6 +253,7 @@ static void estimateWords(SGRLyricsWordRec *words, NSUInteger count, SGKaraokeLi
         free(coverage);
     }
     CGColorSpaceRelease(grey);
+    CFRelease(full);
 
     out->_rows = malloc(sizeof(SGRLyricsRowRec));
     out->_rowCount = 1;

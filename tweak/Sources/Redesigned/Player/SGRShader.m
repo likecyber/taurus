@@ -237,7 +237,9 @@ void SGRShaderLoadSource(SGRShaderInfo *shader, void (^done)(NSString *)) {
 
 static NSMutableDictionary *storedParams(void) {
     NSData *data = [NSUserDefaults.standardUserDefaults dataForKey:SGRKeyVisualiserShaderParams];
-    NSMutableDictionary *all = data ? [NSKeyedUnarchiver unarchiveObjectWithData:data] : nil;
+    NSSet *classes = [NSSet setWithObjects:NSDictionary.class, NSMutableDictionary.class, NSArray.class,
+                       NSMutableArray.class, NSString.class, NSNumber.class, nil];
+    NSMutableDictionary *all = data ? [NSKeyedUnarchiver unarchivedObjectOfClasses:classes fromData:data error:nil] : nil;
     if (![all isKindOfClass:NSMutableDictionary.class]) all = [NSMutableDictionary dictionary];
     return all;
 }

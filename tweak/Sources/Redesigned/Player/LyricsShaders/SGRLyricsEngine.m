@@ -132,7 +132,9 @@ static NSMutableArray<NSDictionary *> *sg_infos;
 
 static NSMutableDictionary *storedParams(void) {
     NSData *data = [NSUserDefaults.standardUserDefaults dataForKey:SGRLyricsKeyParams];
-    NSMutableDictionary *all = data ? [NSKeyedUnarchiver unarchiveObjectWithData:data] : nil;
+    NSSet *classes = [NSSet setWithObjects:NSDictionary.class, NSMutableDictionary.class, NSArray.class,
+                       NSMutableArray.class, NSString.class, NSNumber.class, nil];
+    NSMutableDictionary *all = data ? [NSKeyedUnarchiver unarchivedObjectOfClasses:classes fromData:data error:nil] : nil;
     if (![all isKindOfClass:NSMutableDictionary.class]) all = [NSMutableDictionary dictionary];
     return all;
 }
@@ -247,16 +249,16 @@ static NSArray<NSDictionary *> *posterCutParams(NSInteger which) {
     // The slots are the frame's param slots the sources read: a colour across three, a toggle
     // or a float on one, the packing the renderer flattens the params with.
     if (which == 0) return (@[
-        @{"id": @"halftone", "label": @"Halftone", "type": @"toggle", "default": @YES, "slot": @0},
-        @{"id": @"ink", "label": @"Ink", "type": @"color", "default": @"#f4efe6", "slot": @1},
-        @{"id": @"backdrop", "label": @"Backdrop", "type": @"float", "min": @0, "max": @1, "default": @0.6, "slot": @4},
-        @{"id": @"ghost", "label": @"Ghost", "type": @"float", "min": @0, "max": @0.5, "default": @0.2, "slot": @5},
+        @{@"id": @"halftone", @"label": @"Halftone", @"type": @"toggle", @"default": @YES, @"slot": @0},
+        @{@"id": @"ink", @"label": @"Ink", @"type": @"color", @"default": @"#f4efe6", @"slot": @1},
+        @{@"id": @"backdrop", @"label": @"Backdrop", @"type": @"float", @"min": @0, @"max": @1, @"default": @0.6, @"slot": @4},
+        @{@"id": @"ghost", @"label": @"Ghost", @"type": @"float", @"min": @0, @"max": @0.5, @"default": @0.2, @"slot": @5},
     ]);
     return (@[
-        @{"id": @"ink", "label": @"Ink", "type": @"color", "default": @"#ffffff", "slot": @1},
-        @{"id": @"shade", "label": @"Shade", "type": @"float", "min": @0, "max": @1, "default": @0.75, "slot": @3},
-        @{"id": @"motion", "label": @"Motion", "type": @"float", "min": @0, "max": @1.5, "default": @1, "slot": @4},
-        @{"id": @"subtitle", "label": @"Whole line", "type": @"toggle", "default": @YES, "slot": @5},
+        @{@"id": @"ink", @"label": @"Ink", @"type": @"color", @"default": @"#ffffff", @"slot": @1},
+        @{@"id": @"shade", @"label": @"Shade", @"type": @"float", @"min": @0, @"max": @1, @"default": @0.75, @"slot": @3},
+        @{@"id": @"motion", @"label": @"Motion", @"type": @"float", @"min": @0, @"max": @1.5, @"default": @1, @"slot": @4},
+        @{@"id": @"subtitle", @"label": @"Whole line", @"type": @"toggle", @"default": @YES, @"slot": @5},
     ]);
 }
 

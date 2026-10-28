@@ -104,8 +104,8 @@ enum {
 @property (nonatomic, readonly) NSInteger endMs;
 @property (nonatomic, readonly) NSInteger sungEndMs; // when the singing of it is over
 @property (nonatomic, readonly) BOOL rtl;            // the line reads right to left
-- (const SGRLyricsWordRec *)words count:(NSUInteger *)count;
-- (const SGRLyricsRowRec *)rows count:(NSUInteger *)count;
+- (const SGRLyricsWordRec *)words:(NSUInteger *)count;
+- (const SGRLyricsRowRec *)rows:(NSUInteger *)count;
 // The raster: coverage bytes, `stride` wide, `width` by `height` pixels; nil when the line had
 // nothing to draw.
 - (const uint8_t *)coverageWidth:(NSUInteger *)width height:(NSUInteger *)height stride:(NSUInteger *)stride;
