@@ -904,7 +904,7 @@ static void computePaint(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx
     }
 
     // borders: the shorthand resets, the sides refine; width style colour in any order
-    auto parseBorder = ^(NSArray<SGCTok *> *tokens, CGFloat *width, char *style, BOOL *hasColor) {
+    void (^parseBorder)(NSArray<SGCTok *> *, CGFloat *, char *, BOOL *) = ^(NSArray<SGCTok *> *tokens, CGFloat *width, char *style, BOOL *hasColor) {
         NSMutableArray<SGCTok *> *colorTokens = [NSMutableArray array];
         *style = 's';
         *width = 0;
@@ -934,7 +934,7 @@ static void computePaint(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx
         s.borderTop = s.borderRight = s.borderBottom = s.borderLeft = w;
         s.borderStyle = st;
     }
-    auto sideBorder = ^(NSString *name, CGFloat *out) {
+    void (^sideBorder)(NSString *, CGFloat) = ^(NSString *name, CGFloat ignored) {
         SGCDecl *decl = box.decls[name];
         if (!decl) return;
         CGFloat w; char st; BOOL hasColor = NO;
@@ -942,13 +942,16 @@ static void computePaint(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx
         CGColorRef oldColor = s.borderColor;
         parseBorder(SGCExpandVars(decl.value, vars) ?: @[], &w, &st, &hasColor);
         if (!hasColor) s.borderColor = oldColor;
-        *out = st ? w : 0;
+        if ([name isEqualToString:@"border-top"]) s.borderTop = st ? w : 0;
+        if ([name isEqualToString:@"border-right"]) s.borderRight = st ? w : 0;
+        if ([name isEqualToString:@"border-bottom"]) s.borderBottom = st ? w : 0;
+        if ([name isEqualToString:@"border-left"]) s.borderLeft = st ? w : 0;
         if (st) s.borderStyle = st; else s.borderStyle = old;
     };
-    sideBorder(@"border-top", &s.borderTop);
-    sideBorder(@"border-right", &s.borderRight);
-    sideBorder(@"border-bottom", &s.borderBottom);
-    sideBorder(@"border-left", &s.borderLeft);
+    sideBorder(@"border-top", s.borderTop);
+    sideBorder(@"border-right", s.borderRight);
+    sideBorder(@"border-bottom", s.borderBottom);
+    sideBorder(@"border-left", s.borderLeft);
 
     // box-shadow
     SGCDecl *bs = box.decls[@"box-shadow"];
