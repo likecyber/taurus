@@ -92,6 +92,7 @@ static SGRArtworkField *fieldIn(UIView *page) {
 %end
 
 %ctor {
+    if (!SGRedesignedUI()) return;
     // Registered whatever the switch says: the flag rows elsewhere lock to these while it is on.
     SGRedesignForceFlags(@"album", @{
         @"ios-album-albumfeatureproperties-impl.context_menu_in_navigation_bar_enabled": @YES,
@@ -101,7 +102,6 @@ static SGRArtworkField *fieldIn(UIView *page) {
         // Spotify's cover square is concealed on both pages this covers, so there is nothing left to tilt.
         @"ios-creativeworkcommons-cover-art-tilt-configuration-kit.album_playlist_and_podcast_pages_enabled": @NO,
     });
-    if (!SGRedesignedUI()) return;
     %init;
     SGRequireClasses(@[
         @"_TtC28CreativeWorkPlatform_PageKit24CreativeWorkTemplateView",

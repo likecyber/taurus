@@ -240,6 +240,7 @@ static void publishCover(void) {
 static SGRPlayerCoverWatcher *sg_coverWatcher;
 
 %ctor {
+    if (!SGRedesignedUI()) return;
     // Registered whatever the switch says: the flag rows elsewhere lock to these while it is on.
     NSMutableDictionary<NSString *, id> *flags = [@{
         // The artwork is the picture; Canvas video would cover the field and the corners.
@@ -262,7 +263,6 @@ static SGRPlayerCoverWatcher *sg_coverWatcher;
         flags[[@"ios-feature-nowplaying." stringByAppendingString:egg]] = @NO;
     }
     SGRedesignForceFlags(@"player", flags);
-    if (!SGRedesignedUI()) return;
     %init;
     sg_coverWatcher = [SGRPlayerCoverWatcher new];
     SGAddPlayerStateObserver(sg_coverWatcher);

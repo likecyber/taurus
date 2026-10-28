@@ -8,6 +8,7 @@ typedef enum {
     SGAudioStageSpeedPitch,
     SGAudioStageEffects,
     SGAudioStageHaptics,
+    SGAudioStageSpectrum,   // the Visualizer's analysis, last so it hears the sound as it is played
     SGAudioStageCount
 } SGAudioStage;
 

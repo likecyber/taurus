@@ -8,6 +8,7 @@
 %end
 
 %ctor {
+    if (!SGRedesignedUI()) return;
     SGRedesignForceFlags(@"glass design", @{
         @"ios-reprise-liquid-glass-properties.context_menu_in_navigation_bar_enabled": @YES,
         @"ios-feature-encoreexperiments.new_npv_slider_enabled": @YES,
@@ -18,7 +19,6 @@
         @"ios-playbackcontrol-audiovideoswitcher-impl.enable_connect_bottom_sheet": @YES,
         @"ios-feature-sleeptimer.use_options_sheet": @YES,
     });
-    if (!SGRedesignedUI()) return;
     %init;
     SGRequireClasses(@[@"SPTHubViewController"]);
 }

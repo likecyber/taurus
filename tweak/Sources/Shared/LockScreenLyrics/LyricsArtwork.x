@@ -8,6 +8,7 @@
 #import "LockScreenLyrics.h"
 #import "SGLyricsClip.h"
 #import "Shared/AnimatedArtwork/AnimatedArtwork.h"
+#import "Shared/LockCard/SGCardEngine.h"
 #import "Shared/Lyrics/Lyrics.h"
 #import "Shared/Player/NowPlayingExtras.h"
 #import "Shared/Player/PlayerState.h"
@@ -24,10 +25,19 @@ static const double kShortest = 2, kLongest = 8;
 @property (nonatomic) SGLyricsClipStyle style;
 @property (nonatomic) NSURL *motion;
 @property (nonatomic) double from, seconds;
+// The card's data, built once per line by the tick; nil when the card is off.
+@property (nonatomic) NSDictionary *cardData;
 @end
 
 @implementation SGLockLine
 @end
+
+// The card style chosen for the lyrics clips, nil for the native drawing. Off by default; the Lock
+// screen page's Card style row sets it (SGKeyLockCardStyle, with "off" first).
+static NSString *lockCardStyle(void) {
+    NSString *style = [NSUserDefaults.standardUserDefaults stringForKey:@SGKeyLockCardStyle];
+    return style.length && ![style isEqualToString:@"off"] ? style : nil;
+}
 
 static dispatch_source_t sg_timer;
 static NSString *sg_motionURI;
@@ -101,10 +111,50 @@ static NSURL *clipFile(NSString *artworkID) {
     return [folder() URLByAppendingPathComponent:[artworkID stringByAppendingPathExtension:@"mp4"]];
 }
 
+// The card engine's data for one line: the fields the template's sections read, the words with their
+// order, and the safe areas the styles pad with. Times go out as whole seconds, the way the data's
+// `time` fields are read as labels.
+static NSDictionary *cardDataFor(NSArray<SGKaraokeLine *> *lines, NSInteger index, BOOL resting,
+                                 SPTPlayerState *state) {
+    SGKaraokeLine *line = index >= 0 && index < (NSInteger)lines.count ? lines[index] : nil;
+    NSMutableDictionary *data = [NSMutableDictionary dictionaryWithDictionary:@{
+        @"kind": @"line", @"index": @(MAX(index, 0)), @"count": @(lines.count),
+        @"lang": line.pronunciation ? @"x-srp" : @"", @"dir": SGKaraokeUnspacedScript(SGKaraokeLineText(line)) ? @"rtl" : @"ltr",
+    }];
+    void (^put)(NSString *, id) = ^(NSString *key, id value) { if (value) data[key] = value; };
+    put(@"title", state.track.trackTitle);
+    put(@"artist", state.track.artistName);
+    if (index > 0) {
+        put(@"prev", SGKaraokeLineText(lines[index - 1]));
+        put(@"prevTime", @(lines[index - 1].start / 1000));
+    }
+    if (line && !resting) {
+        put(@"time", @(line.start / 1000));
+        NSMutableArray<NSDictionary *> *words = [NSMutableArray array];
+        NSInteger at = 0;
+        for (SGKaraokeWord *word in line.words) {
+            if (!word.text.length) continue;
+            [words addObject:@{@"word": word.text, @"i": @(at++)}];
+        }
+        if (words.count) data[@"words"] = words;
+        else data[@"words"] = @[ @{@"word": SGKaraokeLineText(line), @"i": @0} ];
+        put(@"translation", line.translation);
+    }
+    if (index + 1 < (NSInteger)lines.count) {
+        put(@"next", SGKaraokeLineText(lines[index + 1]));
+        put(@"nextTime", @(lines[index + 1].start / 1000));
+    }
+    return data;
+}
+
 // On sg_previewQueue.
 static UIImage *previewFor(NSString *artworkID, SGLockLine *line, CGSize size) {
     UIImage *preview = [sg_previews objectForKey:artworkID];
     if (preview) return preview;
+    if (line.cardData) {
+        UIImage *card = SGLockCardRender(SGLockCardStyleID(), line.cardData, line.cover, size.width, size.height, 2, nil);
+        if (card) return ([sg_previews setObject:card forKey:artworkID], card);
+    }
     BOOL tryMotion = line.motion && !motionFailed(line.motion);
     CGImageRef frame = tryMotion ? SGLyricsClipMotionFrame(line.motion, line.previous, line.line, line.next, line.from) : NULL;
     if (tryMotion && !frame) markMotionFailed(line.motion, artworkID);
@@ -122,6 +172,15 @@ static BOOL writeClip(NSString *artworkID, SGLockLine *line, CGSize size) {
     NSURL *file = clipFile(artworkID);
     if ([NSFileManager.defaultManager fileExistsAtPath:file.path]) return YES;
     CFAbsoluteTime start = CFAbsoluteTimeGetCurrent();
+    // The card covers the whole frame, so it draws its own backdrop and holds one image.
+    if (line.cardData) {
+        UIImage *card = SGLockCardRender(SGLockCardStyleID(), line.cardData, line.cover, size.width, size.height, 2, nil);
+        BOOL ok = card && SGLyricsClipWriteImage(file, card.CGImage, size);
+        static NSUInteger told;
+        if (!ok || told++ < 5) SGLog(@"lock lyrics: %@ %@ (card) in %.0f ms", artworkID, ok ? @"written" : @"not written",
+                                     (CFAbsoluteTimeGetCurrent() - start) * 1000);
+        return ok;
+    }
     BOOL tryMotion = line.motion && !motionFailed(line.motion);
     BOOL over = tryMotion && SGLyricsClipWriteOverMotion(file, line.motion, line.previous, line.line, line.next, line.from, line.seconds);
     if (tryMotion && !over) markMotionFailed(line.motion, artworkID);
@@ -198,7 +257,7 @@ void SGLyricsArtworkSetMotion(NSString *uri, NSURL *file) {
 }
 
 static SGLockLine *lineAt(NSArray<SGKaraokeLine *> *lines, NSInteger index, BOOL resting, NSURL *motion,
-                          UIImage *cover, SGLyricsClipStyle style) {
+                          UIImage *cover, SGLyricsClipStyle style, NSDictionary *cardData) {
     SGLockLine *shown = [SGLockLine new];
     shown.line = resting ? nil : textAt(lines, index);
     shown.next = textAt(lines, index + 1);
@@ -206,6 +265,7 @@ static SGLockLine *lineAt(NSArray<SGKaraokeLine *> *lines, NSInteger index, BOOL
     shown.cover = cover;
     shown.style = style;
     shown.motion = motion;
+    shown.cardData = cardData;
     NSInteger start = index < 0 ? 0 : resting ? SGKaraokeSungEnd(lines[index]) + kBreakMs : lines[index].start;
     NSInteger end = index + 1 < (NSInteger)lines.count ? lines[index + 1].start
                  : index < 0 ? start : SGKaraokeSungEnd(lines[index]) + kBreakMs;
@@ -259,9 +319,12 @@ static void tick(void) {
         BOOL nextFarOff = index + 1 == (NSInteger)lines.count || lines[index + 1].start - position > kBreakMs;
         BOOL resting = index < 0 || (position > SGKaraokeSungEnd(lines[index]) + kBreakMs && nextFarOff);
         SGLyricsClipStyle style = (SGLyricsClipStyle)SGInt(SGKeyLockScreenLyricsStyle, SGLyricsClipStill);
-        NSURL *motion = overMotion && [sg_motionURI isEqualToString:SGURIString(state.track.URI)] ? sg_motion : nil;
+        // The card replaces the native text drawing and takes no motion under it.
+        NSString *cardStyle = lockCardStyle();
+        NSDictionary *cardData = cardStyle ? cardDataFor(lines, index, resting, state) : nil;
+        NSURL *motion = overMotion && !cardData && [sg_motionURI isEqualToString:SGURIString(state.track.URI)] ? sg_motion : nil;
         if (motion && motionFailed(motion)) motion = nil;
-        NSString *look = SGLyricsClipLook(motion, style);
+        NSString *look = cardStyle ? [@"card-" stringByAppendingString:cardStyle] : SGLyricsClipLook(motion, style);
         NSString *artworkID = [NSString stringWithFormat:@"%@-%ld%@-%@", trackID, (long)index, resting ? @"r" : @"", look];
         if ([artworkID isEqualToString:sg_shownID]) return;
         // Spotify's request block for its cover, read on main and kept once it is this track's.
@@ -279,11 +342,12 @@ static void tick(void) {
         setShown(artworkID);
         SGLockMotionShowPlain(NO);
         SGNowPlayingSetExtras(@"lyrics", @{MPNowPlayingInfoProperty3x4AnimatedArtwork:
-                                               artworkFor(artworkID, lineAt(lines, index, resting, motion, sg_cover, style))},
+                                               artworkFor(artworkID, lineAt(lines, index, resting, motion, sg_cover, style, cardData))},
                               state.track.trackTitle);
         if (index + 1 < (NSInteger)lines.count) {
             NSString *ahead = [NSString stringWithFormat:@"%@-%ld-%@", trackID, (long)index + 1, look];
-            drawAhead(ahead, lineAt(lines, index + 1, NO, motion, sg_cover, style));
+            drawAhead(ahead, lineAt(lines, index + 1, NO, motion, sg_cover, style,
+                                    cardStyle ? cardDataFor(lines, index + 1, NO, state) : nil));
         }
     }
 }

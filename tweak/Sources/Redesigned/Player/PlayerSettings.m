@@ -33,6 +33,7 @@
 #import "Shared/LyricsSources/LyricsSources.h"
 #import "Shared/Player/SGLastTrack.h"
 #import "Player.h"
+#import "SGRShader.h"
 
 // The card's height as a share of its width, kept between the two bounds.
 static const CGFloat kCardAspect = 0.5, kCardMinHeight = 168, kCardMaxHeight = 220;
@@ -455,12 +456,34 @@ UIViewController *SGRPlayerSettingsPage(NSArray *more) {
                       }, refreshBlurOpacity),
     ];
 
+#pragma mark - the Visualizer's shader
+
+    // What the Visualizer draws when it is on: the shader picker and the chosen shader's params. Both
+    // rows only show while the Visualizer is the background; the picker reloads as the catalog
+    // arrives.
+    SGModRow *shaderRow = SGPageRow(@"Shader", ^UIViewController * { return SGRShaderPickerPage(weakPage); });
+    shaderRow.value = ^NSString * { return SGRShaderChosen().name; };
+    shaderRow.visible = ^BOOL {
+        SGRPlayerBackgroundKind kind = SGRPlayerBackground();
+        if (kind == SGRPlayerBackgroundAnimated) kind = SGRPlayerAnimatedFallback();
+        return kind == SGRPlayerBackgroundVisualiser;
+    };
+    SGModRow *shaderParams = SGPageRow(@"Shader settings", ^UIViewController * { return SGRShaderParamsPage(weakPage); });
+    shaderParams.value = ^NSString * {
+        SGRShaderInfo *shader = SGRShaderChosen();
+        return shader.params.count ? [NSString stringWithFormat:@"%lu", (unsigned long)shader.params.count] : nil;
+    };
+    shaderParams.visible = shaderRow.visible;
+
     NSMutableArray<SGModSection *> *sections = [NSMutableArray arrayWithObjects:
         SGNotedSection(@"This song", @[lyricsBlur, lyricsSource],
                        @"Lyrics blur and source are remembered separately for each song."),
         SGSection(nil, @[animatedFallback, sources, lowData]),
         SGNotedSection(nil, fluid, @"Brightness above 100% can make white text harder to read. A paused song holds the "
                     @"background still. Animated and Visualiser use these where they show Fluid."),
+        SGNotedSection(nil, @[shaderRow, shaderParams,
+                       SGOptionRow(@"Shuffle shaders each song", @"Choose a different Visualizer shader when the track changes", SGRKeyVisualiserShuffle)], @"The shader the Visualizer draws. Settings apply as they are moved; "
+                    @"more shaders arrive with the catalog when it can be reached."),
         SGNotedSection(@"Background opacity", blur, @"Lower opacity makes each background layer more transparent. "
                     @"Canvas and lyrics sliders reduce blur strength directly; at 0% the blur is fully transparent."),
         SGNotedSection(@"Controls", @[

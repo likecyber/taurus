@@ -225,6 +225,56 @@ BOOL SGLyricsClipWrite(NSURL *file, CGImageRef backdrop, NSString *line, NSStrin
     return [NSFileManager.defaultManager moveItemAtURL:partial toURL:file error:nil];
 }
 
+// A ready-drawn frame held for a still's length: the lock card's render, written without the text
+// drawing above. Everything else about the file is the same as SGLyricsClipWrite's still.
+BOOL SGLyricsClipWriteImage(NSURL *file, CGImageRef image, CGSize size) {
+    NSURL *partial = [file URLByAppendingPathExtension:@"partial"];
+    [NSFileManager.defaultManager removeItemAtURL:partial error:nil];
+    AVAssetWriter *writer = [AVAssetWriter assetWriterWithURL:partial fileType:AVFileTypeMPEG4 error:nil];
+    if (!writer) return NO;
+    AVAssetWriterInput *input = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeVideo outputSettings:@{
+        AVVideoCodecKey: AVVideoCodecTypeH264,
+        AVVideoWidthKey: @(size.width),
+        AVVideoHeightKey: @(size.height),
+        AVVideoCompressionPropertiesKey: @{AVVideoAverageBitRateKey: @(2000000), AVVideoMaxKeyFrameIntervalKey: @(kFPS)},
+    }];
+    AVAssetWriterInputPixelBufferAdaptor *adaptor = [AVAssetWriterInputPixelBufferAdaptor assetWriterInputPixelBufferAdaptorWithAssetWriterInput:input
+        sourcePixelBufferAttributes:@{
+            (id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA),
+            (id)kCVPixelBufferWidthKey: @(size.width),
+            (id)kCVPixelBufferHeightKey: @(size.height),
+        }];
+    if (![writer canAddInput:input]) return NO;
+    [writer addInput:input];
+    if (![writer startWriting]) return NO;
+    [writer startSessionAtSourceTime:kCMTimeZero];
+    while (!input.readyForMoreMediaData && writer.status == AVAssetWriterStatusWriting) [NSThread sleepForTimeInterval:0.002];
+    CVPixelBufferRef buffer = NULL;
+    BOOL ok = writer.status == AVAssetWriterStatusWriting && adaptor.pixelBufferPool
+        && CVPixelBufferPoolCreatePixelBuffer(NULL, adaptor.pixelBufferPool, &buffer) == kCVReturnSuccess;
+    if (ok) {
+        CVPixelBufferLockBaseAddress(buffer, 0);
+        CGContextRef context = newContext(size, CVPixelBufferGetBaseAddress(buffer), CVPixelBufferGetBytesPerRow(buffer));
+        CGContextDrawImage(context, CGRectMake(0, 0, size.width, size.height), image);
+        CGContextRelease(context);
+        CVPixelBufferUnlockBaseAddress(buffer, 0);
+        ok = [adaptor appendPixelBuffer:buffer withPresentationTime:CMTimeMake(0, kFPS)];
+        CVPixelBufferRelease(buffer);
+    }
+    if (!ok) {
+        [writer cancelWriting];
+        return NO;
+    }
+    [input markAsFinished];
+    [writer endSessionAtSourceTime:CMTimeMake(kStillSeconds, 1)];
+    dispatch_semaphore_t written = dispatch_semaphore_create(0);
+    [writer finishWritingWithCompletionHandler:^{ dispatch_semaphore_signal(written); }];
+    dispatch_semaphore_wait(written, DISPATCH_TIME_FOREVER);
+    if (writer.status != AVAssetWriterStatusCompleted) return NO;
+    [NSFileManager.defaultManager removeItemAtURL:file error:nil];
+    return [NSFileManager.defaultManager moveItemAtURL:partial toURL:file error:nil];
+}
+
 typedef struct {
     CGSize stored, cut;
     double length;

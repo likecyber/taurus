@@ -69,6 +69,7 @@ static SGRArtworkField *fieldIn(UIView *page) {
 %end
 
 %ctor {
+    if (!SGRedesignedUI()) return;
     // Registered whatever the switch says: the flag rows elsewhere lock to these while it is on.
     SGRedesignForceFlags(@"playlist", @{
         // The page the trees were recorded with (trees/clean/playlist/02.txt).
@@ -76,7 +77,6 @@ static SGRArtworkField *fieldIn(UIView *page) {
         // A row is a cover, a title and an artist. The video badge is none of them.
         @"ios-feature-freetierplaylist.hide_video_badge_for_tracks": @YES,
     });
-    if (!SGRedesignedUI()) return;
     %init;
     SGRequireClasses(@[
         @"_TtC35ListUXPlatform_FreeTierPlaylistImpl17FTPViewController",

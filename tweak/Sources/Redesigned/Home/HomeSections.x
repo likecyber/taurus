@@ -175,6 +175,7 @@ BOOL SGRHomeSectionCollapsed(UIView *cell) {
 }
 
 %ctor {
+    if (!SGRedesignedUI()) return;
     // Registered whatever the switch says: the flag rows elsewhere lock to these while it is on.
     SGRedesignForceFlags(@"home", @{
         // The badge on the DJ card.
@@ -182,7 +183,6 @@ BOOL SGRHomeSectionCollapsed(UIView *cell) {
         // The prompt field for Spotify's AI on Home.
         @"ios-home-evopage-impl.interactive_entrypoint_enabled": @NO,
     });
-    if (!SGRedesignedUI()) return;
     %init;
     SGRequireClasses(@[
         @"_TtC12Element_List18CollectionViewCell",

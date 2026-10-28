@@ -8,6 +8,7 @@
 #import "Settings/SGModPage.h"
 #import "Settings/SGPageStyle.h"
 #import "Shared/Fonts/Fonts.h"
+#import "FontCatalog.h"
 
 static NSURL *fontFolder(void) {
     NSURL *support = [NSFileManager.defaultManager URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask].firstObject;
@@ -220,13 +221,14 @@ static NSString *chosenLabel(void) {
     return SGAppFontNames()[font];
 }
 
-typedef NS_ENUM(NSInteger, SGFontSection) { SGFontBuiltIn, SGFontMore, SGFontYours };
+typedef NS_ENUM(NSInteger, SGFontSection) { SGFontBuiltIn, SGFontMore, SGFontCatalog, SGFontYours };
 
 @interface SGFontPage : SGPage
 @end
 
 @implementation SGFontPage {
     NSArray<NSString *> *_families;
+    NSArray<SGFontCatalogEntry *> *_catalog;
     UIView *_footer;
 }
 
@@ -235,6 +237,8 @@ typedef NS_ENUM(NSInteger, SGFontSection) { SGFontBuiltIn, SGFontMore, SGFontYou
     self.title = @"Font";
     _families = SGAppFontFamilies();
     SGRegisterCustomFont();   // so the imported family can be drawn here, whichever font is chosen
+    SGFontCatalogRegisterInstalled();   // so a downloaded catalog font can be drawn here too
+    _catalog = SGFontCatalogEntries();
     return self;
 }
 
@@ -243,13 +247,20 @@ typedef NS_ENUM(NSInteger, SGFontSection) { SGFontBuiltIn, SGFontMore, SGFontYou
     NSString *own = self.styleCount == 1
         ? @"A font of your own is a .ttf or .otf file from Files. This one has a single style, so bold text comes out regular. Pick all the files of a family together to keep bold. "
         : @"A font of your own comes from Files: a .ttf or .otf file, or all the files of one family picked together, so bold and italic stay. ";
-    _footer = SGNote([own stringByAppendingString:@"Text Spotify draws itself may keep its own font. Changes apply after you restart Spotify."]);
+    _footer = SGNote([own stringByAppendingString:@"A catalog font downloads whole, its license with it. Text Spotify draws itself may keep its own font. Changes apply after you restart Spotify."]);
     self.tableView.tableFooterView = _footer;
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self refreshFooter];
+    // The catalog answers late the first time, and a download moves by the second; both come through
+    // the one notification.
+    __weak SGFontPage *page = self;
+    [[NSNotificationCenter defaultCenter] addObserverForName:SGFontCatalogDidChangeNotification object:nil queue:nil
+                                                 usingBlock:^(NSNotification *_) {
+        dispatch_async(dispatch_get_main_queue(), ^{ [page refresh]; });
+    }];
 }
 
 - (void)viewWillLayoutSubviews {
@@ -264,7 +275,13 @@ typedef NS_ENUM(NSInteger, SGFontSection) { SGFontBuiltIn, SGFontMore, SGFontYou
 
 - (void)refresh {
     [self refreshFooter];
+    _catalog = SGFontCatalogEntries();
     [self.tableView reloadData];
+}
+
+// The catalog's entries, listed even before its first answer arrives: the page shows what it has.
+- (NSInteger)catalogRows {
+    return (NSInteger)_catalog.count;
 }
 
 // The imported family, while there is one, then the row that adds one.
@@ -279,17 +296,19 @@ typedef NS_ENUM(NSInteger, SGFontSection) { SGFontBuiltIn, SGFontMore, SGFontYou
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)table {
-    return 3;
+    return 4;
 }
 
 - (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {
     if (section == SGFontBuiltIn) return (NSInteger)SGAppFontNames().count;
     if (section == SGFontMore) return (NSInteger)_families.count;
+    if (section == SGFontCatalog) return self.catalogRows;
     return self.importedName.length ? 2 : 1;
 }
 
 - (UIView *)tableView:(UITableView *)table viewForHeaderInSection:(NSInteger)section {
-    return section == SGFontBuiltIn ? nil : SGSectionHeader(table, section == SGFontMore ? @"More fonts" : @"Your fonts");
+    if (section == SGFontBuiltIn) return nil;
+    return SGSectionHeader(table, section == SGFontMore ? @"More fonts" : section == SGFontCatalog ? @"Catalog" : @"Your fonts");
 }
 
 - (CGFloat)tableView:(UITableView *)table heightForHeaderInSection:(NSInteger)section {
@@ -312,6 +331,20 @@ typedef NS_ENUM(NSInteger, SGFontSection) { SGFontBuiltIn, SGFontMore, SGFontYou
         title = _families[(NSUInteger)path.row];
         font = previewFont(title, YES, size);
         selected = chosen == SGAppFontFamily && [title isEqualToString:[store stringForKey:SGKeyAppFontFamily]];
+    } else if (path.section == SGFontCatalog) {
+        SGFontCatalogEntry *entry = _catalog[(NSUInteger)path.row];
+        title = entry.name;
+        if (entry.state == SGFontCatalogDownloading) {
+            subtitle = [NSString stringWithFormat:@"%@ · %.0f%% of %.0f MB", entry.designer ?: @"", entry.progress * 100, round(entry.downloadSize / 1048576.0)];
+        } else if (entry.error) {
+            subtitle = [NSString stringWithFormat:@"%@ · %@", entry.designer ?: @"", entry.error.localizedDescription];
+        } else if (entry.state == SGFontCatalogAbsent) {
+            subtitle = [NSString stringWithFormat:@"%@ · %.0f MB to download", entry.designer ?: @"", round(entry.downloadSize / 1048576.0)];
+        } else {
+            subtitle = entry.designer;
+        }
+        font = previewFont(entry.familyName, YES, size);
+        selected = chosen == SGAppFontFamily && [entry.familyName isEqualToString:[store stringForKey:SGKeyAppFontFamily]];
     } else if (path.row == 0 && self.importedName.length) {
         title = self.importedName;
         font = previewFont(title, YES, size);
@@ -344,6 +377,10 @@ typedef NS_ENUM(NSInteger, SGFontSection) { SGFontBuiltIn, SGFontMore, SGFontYou
     } else if (path.section == SGFontMore) {
         [NSUserDefaults.standardUserDefaults setObject:_families[(NSUInteger)path.row] forKey:SGKeyAppFontFamily];
         SGSetInt(SGKeyAppFont, SGAppFontFamily);
+    } else if (path.section == SGFontCatalog) {
+        SGFontCatalogEntry *entry = _catalog[(NSUInteger)path.row];
+        if (entry.state == SGFontCatalogInstalled) SGFontCatalogChoose(entry);
+        else if (entry.state == SGFontCatalogAbsent) [entry download];
     } else if (path.row == 0 && self.importedName.length) {
         SGSetInt(SGKeyAppFont, SGAppFontCustom);
     } else {

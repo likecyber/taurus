@@ -3,7 +3,8 @@
 #import "Core/SGCore.h"
 #import "Settings/SGPage.h"
 #import "Settings/SGPageStyle.h"
-#import "AudioEffectsPage.h"
+#import "AudioEffects.h"
+#import "AudioEffectsCommunity.h"
 #import "AudioEffectsPresets.h"
 
 static void showAlert(UIViewController *owner, NSString *title, NSString *message) {
@@ -43,6 +44,7 @@ static NSArray<NSString *> *userPresetNames(void) {
 
 @implementation SGDSPPresetList {
     NSArray<NSString *> *_builtIn, *_mine;
+    NSArray<SGDSPCommunityPreset *> *_community;
     NSIndexPath *_picked;
     UIView *_footer;
     BOOL _kept;   // the settings from before this page's first pick are saved
@@ -52,6 +54,7 @@ static NSArray<NSString *> *userPresetNames(void) {
     if (!(self = [super initWithStyle:UITableViewStyleInsetGrouped])) return nil;
     self.title = @"Presets";
     _builtIn = SGDSPBuiltInPresetNames();
+    _community = SGDSPCommunityPresets();
     return self;
 }
 
@@ -62,6 +65,15 @@ static NSArray<NSString *> *userPresetNames(void) {
                       "effect, the Graphic EQ too. What you had before the first pick is kept under Yours as Before presets. "
                       "Swipe left on one of yours to delete it.");
     self.tableView.tableFooterView = _footer;
+    // The catalog's list lands late the first time; the community section fills when it does.
+    __weak SGDSPPresetList *page = self;
+    [[NSNotificationCenter defaultCenter] addObserverForName:SGDSPCommunityChangedNotification object:nil queue:nil
+                                                 usingBlock:^(NSNotification *_) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            page->_community = SGDSPCommunityPresets();
+            [page.tableView reloadData];
+        });
+    }];
 }
 
 - (void)viewWillLayoutSubviews {
@@ -77,25 +89,29 @@ static NSArray<NSString *> *userPresetNames(void) {
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     _mine = userPresetNames();
+    _community = SGDSPCommunityPresets();
+    SGDSPCommunityRefresh();   // the kept list is already showing; the fresh one lands through the notification
     [self.tableView reloadData];
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)table {
-    return 3;
+    return 4;
 }
 
 - (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {
     if (section == 0) return (NSInteger)_builtIn.count;
     if (section == 1) return MAX((NSInteger)_mine.count, 1);
+    if (section == 2) return MAX((NSInteger)_community.count, 1);
     return 1;
 }
 
 - (UIView *)tableView:(UITableView *)table viewForHeaderInSection:(NSInteger)section {
-    return section == 2 ? nil : SGSectionHeader(table, section == 0 ? @"Built in" : @"Yours");
+    if (section == 3) return nil;
+    return SGSectionHeader(table, section == 0 ? @"Built in" : section == 1 ? @"Yours" : @"Community");
 }
 
 - (CGFloat)tableView:(UITableView *)table heightForHeaderInSection:(NSInteger)section {
-    return section == 2 ? SGSectionGap : UITableViewAutomaticDimension;
+    return section == 3 ? SGSectionGap : UITableViewAutomaticDimension;
 }
 
 - (UIView *)tableView:(UITableView *)table viewForFooterInSection:(NSInteger)section {
@@ -108,7 +124,7 @@ static NSArray<NSString *> *userPresetNames(void) {
 
 - (UITableViewCell *)tableView:(UITableView *)table cellForRowAtIndexPath:(NSIndexPath *)path {
     UITableViewCell *cell = SGDequeueCell(table, @"preset");
-    if (path.section == 2) {
+    if (path.section == 3) {
         SGFillCell(cell, @"Save current settings…", @"Every effect as it is now, under a name", nil, @"square.and.arrow.down");
         cell.selectionStyle = UITableViewCellSelectionStyleDefault;
         return cell;
@@ -116,6 +132,19 @@ static NSArray<NSString *> *userPresetNames(void) {
     if (path.section == 1 && !_mine.count) {
         SGFillCell(cell, @"None saved yet", nil, SGGrey(), nil);
         cell.accessibilityTraits = UIAccessibilityTraitNone;
+        return cell;
+    }
+    if (path.section == 2) {
+        if (!_community.count) {
+            SGFillCell(cell, @"Nothing from the catalog yet", nil, SGGrey(), nil);
+            cell.accessibilityTraits = UIAccessibilityTraitNone;
+            return cell;
+        }
+        SGDSPCommunityPreset *preset = _community[(NSUInteger)path.row];
+        NSString *subtitle = [preset.summary length] ? preset.summary : @"";
+        if (preset.needsDownload) subtitle = [subtitle length] ? [subtitle stringByAppendingString:@" · downloads its files"] : @"Downloads its files";
+        SGFillCell(cell, preset.name, subtitle, nil, nil);
+        cell.selectionStyle = UITableViewCellSelectionStyleDefault;
         return cell;
     }
     BOOL builtIn = path.section == 0;
@@ -126,16 +155,22 @@ static NSArray<NSString *> *userPresetNames(void) {
 }
 
 - (BOOL)tableView:(UITableView *)table shouldHighlightRowAtIndexPath:(NSIndexPath *)path {
+    if (path.section == 2) return _community.count > 0;
     return path.section != 1 || _mine.count;
 }
 
 - (void)tableView:(UITableView *)table didSelectRowAtIndexPath:(NSIndexPath *)path {
     [table deselectRowAtIndexPath:path animated:YES];
-    if (path.section == 2) {
+    if (path.section == 3) {
         [self askForName];
         return;
     }
     if (path.section == 1 && !_mine.count) return;
+    if (path.section == 2) {
+        if (!_community.count) return;
+        [self applyCommunity:_community[(NSUInteger)path.row]];
+        return;
+    }
     NSString *name = path.section == 1 ? _mine[(NSUInteger)path.row] : nil;
     // Loading Before presets itself is the way back, so it is never written over by its own pick.
     if (!_kept && ![name isEqualToString:kBeforePresets]) {
@@ -147,6 +182,28 @@ static NSArray<NSString *> *userPresetNames(void) {
     else if (!SGDSPLoadUserPreset(name)) return;
     _picked = name ? [NSIndexPath indexPathForRow:(NSInteger)[_mine indexOfObject:name] inSection:1] : path;
     [table reloadSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)] withRowAnimation:UITableViewRowAnimationNone];
+}
+
+// A community pick: the spinner on while its files come in, then the list back without a tick, since
+// what is applied now is not one of the two lists' own picks.
+- (void)applyCommunity:(SGDSPCommunityPreset *)preset {
+    UIAlertController *wait = [UIAlertController alertControllerWithTitle:preset.name
+        message:preset.needsDownload ? @"Fetching its files…" : @"Applying…" preferredStyle:UIAlertControllerStyleAlert];
+    [self presentViewController:wait animated:YES completion:nil];
+    __weak SGDSPPresetList *page = self;
+    SGDSPCommunityApply(preset, ^(NSString *error) {
+        [wait dismissViewControllerAnimated:YES completion:^{
+            if (error) {
+                UIAlertController *sorry = [UIAlertController alertControllerWithTitle:@"Could not apply"
+                    message:error preferredStyle:UIAlertControllerStyleAlert];
+                [sorry addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+                [page presentViewController:sorry animated:YES completion:nil];
+                return;
+            }
+            page->_picked = nil;   // a community pick is not one of the two lists' ticks
+            [page.tableView reloadData];
+        }];
+    });
 }
 
 - (UISwipeActionsConfiguration *)tableView:(UITableView *)table trailingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)path {

@@ -1,5 +1,6 @@
-// One font for the whole app (Fonts.x), chosen on the Appearance page under either look, and a font file
-// of the user's own as one of the choices (FontImport.m).
+// One font for the whole app (Fonts.x), chosen on the Appearance page under either look, a font file
+// of the user's own as one of the choices (FontImport.m), and a font of the catalog downloaded
+// (FontCatalog.m).
 #import <UIKit/UIKit.h>
 
 #define SGKeyAppFont @"spotifyglass.font"

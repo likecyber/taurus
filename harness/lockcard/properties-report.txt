@@ -1,0 +1,1025 @@
+Receipt                  fonts=['Space Mono'] template=custom csslen=868
+Holo                     fonts=[] template=custom csslen=5771
+Line number              fonts=['Geist'] template=custom csslen=802
+Word Collage             fonts=[] template=custom csslen=13459
+Stickers                 fonts=['Syne'] template=custom csslen=590
+Cover in letters         fonts=['Oswald'] template=custom csslen=648
+Matrix                   fonts=['Space Mono'] template=custom csslen=4323
+Truetone                 fonts=['Geist'] template=custom csslen=587
+Cyberpunk Messages V1    fonts=[] template=custom csslen=7414
+Messages                 fonts=[] template=custom csslen=4004
+Starburst                fonts=['Geist'] template=custom csslen=973
+Subtitles                fonts=['Geist Mono'] template=custom csslen=745
+Polaroid                 fonts=['Caveat'] template=custom csslen=979
+Twitter Style            fonts=[] template=custom csslen=4575
+Window                   fonts=['Instrument Serif'] template=custom csslen=864
+Duotone                  fonts=['Geist'] template=custom csslen=570
+Old TV                   fonts=[] template=custom csslen=8049
+Poster                   fonts=['Oswald'] template=custom csslen=633
+Magazine                 fonts=['Instrument Serif', 'Playfair Display'] template=custom csslen=7449
+SKIP (no css): catalog.json
+Tiles                    fonts=['Geist'] template=custom csslen=700
+RGB Split                fonts=['Space Mono'] template=custom csslen=890
+Print                    fonts=['Playfair Display'] template=custom csslen=753
+
+22 catalog styles scanned
+
+=== PROPERTIES ===
+  --bub                    5
+  --cover-bg               1
+  --g                      1
+  --hi                     1
+  --k                      2
+  --rainbow                1
+  --recv                   1
+  --scanlines              1
+  --sent                   1
+  --sh                     1
+  --w                      1
+  -webkit-mask             1
+  GLASS                    1
+  HEADER                   1
+  LYRICS                   1
+  Magazine                 1
+  SCREEN                   2
+  TOGGLES                  1
+  Tail                     1
+  align-content            1
+  align-items              20
+  align-self               9
+  b                        37
+  background               154
+  background-blend-mode    3
+  background-clip          1
+  background-image         1
+  bars                     1
+  border                   6
+  border-bottom            9
+  border-left              2
+  border-radius            32
+  border-top               4
+  bottom                   17
+  box-decoration-break     1
+  box-shadow               21
+  box-sizing               10
+  bubbles                  1
+  clip-path                8
+  color                    122
+  content                  92
+  copy                     1
+  cover                    1
+  display                  100
+  filter                   22
+  flex                     23
+  flex-direction           28
+  flex-grow                1
+  flex-shrink              6
+  flex-wrap                2
+  font                     51
+  font-family              14
+  font-size                66
+  font-style               14
+  font-weight              24
+  gap                      19
+  header                   1
+  height                   48
+  i                        3
+  inset                    23
+  it                       2
+  justify-content          22
+  left                     48
+  letter-spacing           36
+  line                     2
+  line-height              29
+  lines                    1
+  margin                   12
+  margin-bottom            5
+  margin-left              15
+  margin-right             6
+  margin-top               21
+  mask                     2
+  masthead                 1
+  max-height               3
+  max-width                11
+  min-height               1
+  min-width                8
+  mix-blend-mode           12
+  only                     1
+  opacity                  40
+  order                    5
+  overflow                 19
+  overflow-wrap            5
+  padding                  47
+  padding-bottom           7
+  padding-left             1
+  padding-right            2
+  padding-top              6
+  pointer-events           3
+  position                 53
+  received                 1
+  right                    25
+  rotate                   8
+  sent                     1
+  sides                    1
+  sits                     1
+  text-align               21
+  text-decoration          2
+  text-indent              1
+  text-shadow              13
+  text-transform           30
+  text-wrap                14
+  top                      42
+  transform                21
+  transform-origin         4
+  translate                2
+  type                     1
+  visibility               6
+  white-space              12
+  width                    44
+  word-spacing             1
+  wraps                    1
+  z-index                  52
+
+=== UNITS ===
+  cqh      13
+  cqw      533
+  em       34
+  px       155
+
+=== FUNCTIONS ===
+  attr                     6
+  blur                     8
+  brightness               16
+  calc                     106
+  clamp                    5
+  color-mix                24
+  contrast                 10
+  grayscale                7
+  hue-rotate               1
+  invert                   2
+  is                       9
+  lang                     26
+  linear-gradient          26
+  max                      3
+  min                      1
+  mod                      4
+  not                      4
+  nth-child                56
+  path                     1
+  polygon                  7
+  radial-gradient          18
+  repeating-conic-gradient 3
+  repeating-linear-gradient 12
+  rgba                     110
+  rotate                   6
+  saturate                 11
+  scale                    5
+  scaleX                   3
+  sepia                    2
+  skewX                    1
+  sqrt                     3
+  translateX               1
+  translateY               2
+  var                      227
+
+=== SELECTORS ===
+  .a1                                      1
+  .a2                                      1
+  .ant::before                             1
+  .artist                                  1
+  .artist::before                          1
+  .av                                      2
+  .av.big                                  1
+  .back                                    1
+  .back b                                  1
+  .bar span                                1
+  .bg                                      15
+  .big-album                               1
+  .big-artist                              1
+  .big-title                               1
+  .body                                    1
+  .bt                                      1
+  .card                                    17
+  .card > *                                1
+  .card::after                             11
+  .card::before                            11
+  .card:is([data-index$="1"]               5
+  .card:not([data-kind="line"]) .meta2     1
+  .card:not([data-kind="line"]) .read      1
+  .card[data-index$="0"] .lk::after        1
+  .card[data-index$="0"] .rt::after        1
+  .card[data-index$="0"] .vw::after        1
+  .card[data-index$="1"] .lk::after        1
+  .card[data-index$="1"] .rep::after       1
+  .card[data-index$="1"] .rt::after        1
+  .card[data-index$="1"] .vw::after        1
+  .card[data-index$="2"] .lk::after        1
+  .card[data-index$="2"] .rep::after       1
+  .card[data-index$="2"] .rt::after        1
+  .card[data-index$="2"] .vw::after        1
+  .card[data-index$="3"] .lk::after        1
+  .card[data-index$="3"] .rep::after       1
+  .card[data-index$="3"] .rt::after        1
+  .card[data-index$="3"] .vw::after        1
+  .card[data-index$="4"] .lk::after        1
+  .card[data-index$="4"] .rep::after       1
+  .card[data-index$="4"] .rt::after        1
+  .card[data-index$="4"] .vw::after        1
+  .card[data-index$="5"] .lk::after        1
+  .card[data-index$="5"] .rep::after       1
+  .card[data-index$="5"] .rt::after        1
+  .card[data-index$="5"] .vw::after        1
+  .card[data-index$="6"] .lk::after        1
+  .card[data-index$="6"] .rep::after       1
+  .card[data-index$="6"] .rt::after        1
+  .card[data-index$="6"] .vw::after        1
+  .card[data-index$="7"] .lk::after        1
+  .card[data-index$="7"] .rep::after       1
+  .card[data-index$="7"] .rt::after        1
+  .card[data-index$="7"] .vw::after        1
+  .card[data-index$="8"] .lk::after        1
+  .card[data-index$="8"] .rep::after       1
+  .card[data-index$="8"] .rt::after        1
+  .card[data-index$="8"] .vw::after        1
+  .card[data-index$="9"] .lk::after        1
+  .card[data-index$="9"] .rep::after       1
+  .card[data-index$="9"] .rt::after        1
+  .card[data-index$="9"] .vw::after        1
+  .card[data-kind="gap"]                   1
+  .card[data-kind="gap"] .cols             1
+  .card[data-kind="gap"] .mos              1
+  .card[data-kind="intro"] .cols           1
+  .card[data-kind="intro"] .mos            1
+  .card[data-kind="outro"]                 1
+  .card[data-kind="outro"] .cols           1
+  .card[data-kind="outro"] .mos            1
+  .card[data-kind=gap] .line               1
+  .card[data-kind=intro] .line             1
+  .chat > * + *                            1
+  .chat > .read                            1
+  .chat > :last-child                      1
+  .cols b                                  1
+  .cost                                    1
+  .cost i                                  1
+  .cost i:nth-child(2)                     1
+  .cover                                   1
+  .credit                                  1
+  .dmg                                     1
+  .fa                                      1
+  .face                                    1
+  .fb                                      1
+  .flavor                                  1
+  .g                                       2
+  .glass                                   1
+  .glass > span                            1
+  .h1                                      1
+  .h2                                      1
+  .head                                    1
+  .hl                                      1
+  .hl .w                                   1
+  .holo                                    1
+  .holo::after                             1
+  .hp                                      1
+  .hp small                                1
+  .hp::after                               1
+  .ic                                      1
+  .issue                                   1
+  .k-line .screen > span                   1
+  .k-line .text                            1
+  .k-line[data-index$="0"] .cols           1
+  .k-line[data-index$="0"] .hero           1
+  .k-line[data-index$="0"] .hl             1
+  .k-line[data-index$="0"] .hl .w:nth-child(4n+3) 1
+  .k-line[data-index$="0"] .tr             1
+  .k-line[data-index$="0"] b               1
+  .k-line[data-index$="0"] b:nth-child(11n+6) 1
+  .k-line[data-index$="0"] b:nth-child(4n) 1
+  .k-line[data-index$="0"] b:nth-child(4n+2) 1
+  .k-line[data-index$="0"] b:nth-child(5n+1) 1
+  .k-line[data-index$="0"] b:nth-child(7n+3) 1
+  .k-line[data-index$="1"] .cols           1
+  .k-line[data-index$="1"] .hero           1
+  .k-line[data-index$="1"] .hl             1
+  .k-line[data-index$="1"] .hl .w:nth-child(3n+2) 1
+  .k-line[data-index$="1"] .tr             1
+  .k-line[data-index$="1"] b               1
+  .k-line[data-index$="1"] b:nth-child(3n+1) 1
+  .k-line[data-index$="1"] b:nth-child(4n+2) 1
+  .k-line[data-index$="1"] b:nth-child(5n+4) 1
+  .k-line[data-index$="1"] b:nth-child(9n+7) 1
+  .k-line[data-index$="2"] .cols           1
+  .k-line[data-index$="2"] .hero           1
+  .k-line[data-index$="2"] .hl             1
+  .k-line[data-index$="2"] .hl .w:nth-child(3n+1) 1
+  .k-line[data-index$="2"] .tr             1
+  .k-line[data-index$="2"] b               1
+  .k-line[data-index$="2"] b:nth-child(3n+1) 1
+  .k-line[data-index$="2"] b:nth-child(5n+2) 1
+  .k-line[data-index$="2"] b:nth-child(7n+3) 1
+  .k-line[data-index$="3"] .cols           1
+  .k-line[data-index$="3"] .hero           1
+  .k-line[data-index$="3"] .hl             1
+  .k-line[data-index$="3"] .hl .w:nth-child(3n) 1
+  .k-line[data-index$="3"] .tr             1
+  .k-line[data-index$="3"] b               1
+  .k-line[data-index$="3"] b:nth-child(3n+2) 1
+  .k-line[data-index$="3"] b:nth-child(4n+1) 1
+  .k-line[data-index$="3"] b:nth-child(7n+4) 1
+  .k-line[data-index$="3"] b:nth-child(8n+5) 1
+  .k-line[data-index$="4"] .cols           1
+  .k-line[data-index$="4"] .hero           1
+  .k-line[data-index$="4"] .hl             1
+  .k-line[data-index$="4"] .hl .w:nth-child(3n+2) 1
+  .k-line[data-index$="4"] .tr             1
+  .k-line[data-index$="4"] b               1
+  .k-line[data-index$="4"] b:nth-child(6n+2) 1
+  .k-line[data-index$="4"] b:nth-child(7n+3) 1
+  .k-line[data-index$="4"] b:nth-child(n+20) 1
+  .k-line[data-index$="5"] .cols           1
+  .k-line[data-index$="5"] .hero           1
+  .k-line[data-index$="5"] .hl .w:nth-child(3n+2) 1
+  .k-line[data-index$="5"] .tr             1
+  .k-line[data-index$="5"] b               1
+  .k-line[data-index$="5"] b:nth-child(4n+2) 1
+  .k-line[data-index$="5"] b:nth-child(7n+5) 1
+  .k-line[data-index$="5"] b:nth-child(9n+4) 1
+  .k-line[data-index$="6"] .fa             1
+  .k-line[data-index$="6"] .fb             1
+  .k-line[data-index$="6"] .hero           1
+  .k-line[data-index$="6"] .hl .w:nth-child(4n+2) 1
+  .k-line[data-index$="6"] .tr             1
+  .k-line[data-index$="6"] b               1
+  .k-line[data-index$="6"] b:nth-child(13n+7) 1
+  .k-line[data-index$="6"] b:nth-child(17n+2) 1
+  .k-line[data-index$="6"] b:nth-child(9n+4) 1
+  .k-line[data-index$="7"] .fa             1
+  .k-line[data-index$="7"] .fb             1
+  .k-line[data-index$="7"] .hero           1
+  .k-line[data-index$="7"] .hl .w:nth-child(2n+1) 1
+  .k-line[data-index$="7"] .hl .w:nth-child(5n+2) 1
+  .k-line[data-index$="7"] .tr             1
+  .k-line[data-index$="7"] b               1
+  .k-line[data-index$="7"] b:nth-child(11n+5) 1
+  .k-line[data-index$="7"] b:nth-child(13n+7) 1
+  .k-line[data-index$="7"] b:nth-child(8n+3) 1
+  .k-line[data-index$="8"] .cols           1
+  .k-line[data-index$="8"] .fa             2
+  .k-line[data-index$="8"] .fb             2
+  .k-line[data-index$="8"] .hero           1
+  .k-line[data-index$="8"] .hl .w:nth-child(3n+1) 1
+  .k-line[data-index$="8"] .hl .w:nth-child(4n+3) 1
+  .k-line[data-index$="8"] .tr             1
+  .k-line[data-index$="8"] b               1
+  .k-line[data-index$="8"] b:nth-child(11n+3) 1
+  .k-line[data-index$="8"] b:nth-child(13n+5) 1
+  .k-line[data-index$="8"] b:nth-child(6n+1) 1
+  .k-line[data-index$="8"] b:nth-child(6n+3) 1
+  .k-line[data-index$="8"] b:nth-child(6n+5) 1
+  .k-line[data-index$="9"] .fa             1
+  .k-line[data-index$="9"] .fb             1
+  .k-line[data-index$="9"] .hero           1
+  .k-line[data-index$="9"] .hl .w:nth-child(3n+2) 1
+  .k-line[data-index$="9"] .hl .w:nth-child(5n+4) 1
+  .k-line[data-index$="9"] .mos            1
+  .k-line[data-index$="9"] .tr             1
+  .k-line[data-index$="9"] b               1
+  .k-line[data-index$="9"] b:nth-child(11n+5) 1
+  .k-line[data-index$="9"] b:nth-child(13n+8) 1
+  .k-line[data-index$="9"] b:nth-child(17n+3) 1
+  .k-line[data-index$="9"] b:nth-child(7n+2) 1
+  .kn1                                     1
+  .kn2                                     1
+  .knob                                    1
+  .knob::after                             1
+  .l1                                      1
+  .l2                                      1
+  .lb                                      1
+  .leg                                     1
+  .light                                   1
+  .line                                    19
+  .line::after                             1
+  .line::before                            5
+  .lk                                      1
+  .lk::before                              1
+  .m                                       1
+  .meta                                    17
+  .meta .artist                            2
+  .meta .artist::before                    4
+  .meta span                               1
+  .meta2                                   1
+  .meta2 b                                 1
+  .meta::after                             1
+  .mount                                   1
+  .move                                    1
+  .msg .txt                                1
+  .msg::before                             1
+  .mt                                      1
+  .mv                                      1
+  .n                                       2
+  .n::before                               1
+  .name                                    2
+  .next                                    18
+  .next)                                   1
+  .next::before                            3
+  .nx                                      1
+  .nx .dmg                                 1
+  .osd                                     1
+  .prev                                    17
+  .prev::before                            3
+  .rain b                                  1
+  .rain i                                  1
+  .rain i:nth-child(3n)                    1
+  .rain i:nth-child(4n+1)                  1
+  .read b                                  1
+  .rec                                     1
+  .redline                                 1
+  .rep::before                             1
+  .roll                                    1
+  .row .msg                                1
+  .rt::before                              1
+  .rx::before                              1
+  .screen                                  1
+  .screen > span                           1
+  .sep                                     1
+  .snow                                    1
+  .st::before                              1
+  .stage                                   1
+  .stat                                    1
+  .stats                                   1
+  .strip                                   1
+  .t2                                      1
+  .tc::after                               1
+  .tc::before                              1
+  .text                                    1
+  .title                                   2
+  .title::before                           1
+  .top                                     1
+  .tr                                      20
+  .tv::after                               2
+  .tv::before                              2
+  .tx                                      1
+  .tx::before                              1
+  .txt                                     1
+  .txt.main                                1
+  .typing                                  2
+  .typing i                                1
+  .typing::before                          2
+  .ver                                     1
+  .vf                                      1
+  .w                                       2
+  .w:nth-child(3n)                         1
+  .w:nth-child(3n+1)                       1
+  .w:nth-child(even)                       1
+  .when                                    1
+  .who                                     1
+  .who b                                   1
+  .who small                               1
+  .wr                                      1
+  .wr i                                    1
+  .wr small                                1
+  /* ---------- intro                      1
+  /* ---------- masthead: the largest of 12 sizes that fits on one line ---------- */
+
+.mast 1
+  /* ---------- other scripts ---------- */
+
+:lang(ja) .line 1
+  /* ---------- shared structure ---------- */
+.cols 1
+  /* ---------- type: black on a light cover 1
+  /* ============ TOGGLES: 1 = on          1
+  /* ==================================================== */
+
+.card > * 1
+  /* =====================================================================
+   FRAME 0 – blue blocks
+   ===================================================================== */
+.k-line[data-index$="0"] 1
+  /* =====================================================================
+   FRAME 1
+   ===================================================================== */
+.k-line[data-index$="1"] 1
+  /* =====================================================================
+   FRAME 2
+   ===================================================================== */
+.k-line[data-index$="2"] 1
+  /* =====================================================================
+   FRAME 3
+   ===================================================================== */
+.k-line[data-index$="3"] 1
+  /* =====================================================================
+   FRAME 4
+   ===================================================================== */
+.k-line[data-index$="4"] 1
+  /* =====================================================================
+   FRAME 5
+   ===================================================================== */
+.k-line[data-index$="5"] 1
+  /* =====================================================================
+   FRAME 6
+   ===================================================================== */
+.k-line[data-index$="6"] 1
+  /* =====================================================================
+   FRAME 7
+   ===================================================================== */
+.k-line[data-index$="7"] 1
+  /* =====================================================================
+   FRAME 8
+   ===================================================================== */
+.k-line[data-index$="8"] 1
+  /* =====================================================================
+   FRAME 9 – clean 1
+  /* =====================================================================
+   INTRO / BREAK / OUTRO – full cover + big title treatment
+   ===================================================================== */
+.card[data-kind="intro"] 1
+  /* =====================================================================
+   Word Collage – Frame 9 clean + strong Intro/Break treatment
+   ===================================================================== */
+
+.card 1
+  /* A deck under the line: the line gives up a little size so the block stays clear of the top. */
+.has-tr 1
+  /* ANTENNA */
+.ant                       1
+  /* BACKGROUND */
+.bg                     1
+  /* BUBBLES */
+.msg                       1
+  /* Back pill                             1
+  /* Balanced only with a space (or CJK) in it: the engine's balancing garbles a word split by overflow-wrap. */
+.line[data-line*=' '] 1
+  /* Bubbles. Even lines: current is sent (blue 1
+  /* CABINET */
+.tv                        1
+  /* CALL / CLOSE */
+.btns                 1
+  /* CHAT PANEL */
+.chat                   1
+  /* CONTROLS */
+.grille                   1
+  /* CRT scanlines + vinětace */
+.card::after 1
+  /* Contact header: cover as the avatar   1
+  /* Cover layer */
+.mos                   1
+  /* Dark                                  1
+  /* Every stop is --c1 at some alpha      1
+  /* GLASS: scanlines                      1
+  /* HEADER: SONG TITLE > ARTIST + underline bars + red line */
+.hdr 1
+  /* HOLO CARD */
+.card                    1
+  /* In flow above the bottom-anchored cover block 1
+  /* In the shade layer                    1
+  /* Instrument Serif is Latin only: Cyrillic 1
+  /* LYRICS: only on lyric lines */
+.text  1
+  /* MATRIX */
+.card                       1
+  /* Magazine: every line is the cover of an issue. Masthead = artist 1
+  /* Main lyric */
+.hero                   1
+  /* Odd lines flip the sides: current is received (grey 1
+  /* One word splits once at most (the engine doesn't split the rest again) 1
+  /* ROOM + GLOW FROM THE COVER COLOURS */
+.bg 1
+  /* Read receipt under sent bubbles: "Read" in bold 1
+  /* SCREEN: lyric lines                   1
+  /* SCREEN: the cover on intro            1
+  /* STAND */
+.shelf                       1
+  /* Same masthead again                   1
+  /* Special block (intro / break / outro) – hidden by default */
+.special 1
+  /* TEXT SIZES */
+.line                   1
+  /* TOP CODES */
+.code                    1
+  /* Tail: a curved wedge in the bubble's own colour at the bottom outer corner */
+.prev::before 1
+  /* The chat sits at the bottom of the safe area 1
+  /* The engine only splits a word that doesn't start its line: a zero-width word in front lets a single long
+   name or word break (and so fail the fit test) instead of running off the card. */
+.g::before 1
+  /* The line's start time                 1
+  /* The smallest size stays even when it wraps: a name too long for every size still shows. */
+.end .n 1
+  /* The song's last line                  1
+  /* Veils where type sits: --c1 through a luminance threshold is black on a dark cover 1
+  /* X / Twitter dark mode lyric card. Delete the .card::before block to show more of the cover. */
+.bg 1
+  /* cover → zelený fosfor */
+.bg          1
+  /* current tweet                         1
+  /* digitální déšť */
+.rain               1
+  /* envelope icon drawn in CSS */
+.ico    1
+  /* fake numbers                          1
+  /* glitch bars: their position changes with every lyric line */
+.tear 1
+  /* header */
+.hdr                        1
+  /* hlavička */
+.head                     1
+  /* hlavička */
+.sys                      1
+  /* ilustrace + holo foil */
+.art         1
+  /* intro / pauza / outro */
+.card:is([data-kind="intro"] 1
+  /* karta + chromový rám */
+.tc           1
+  /* no stats on intro                     1
+  /* poslední slovo bílé = hlava kapky */
+.w 1
+  /* previous tweet                        1
+  /* progress */
+.bar                      1
+  /* received: dark teal                   1
+  /* red bottom line */
+.foot              1
+  /* red scroll rail */
+.rail              1
+  /* sent: green                           1
+  /* spodek karty (rozmazaná zóna) */
+.foot 1
+  /* texty */
+.stream                      1
+  /* the X button next to the current line */
+.x 1
+  /* tweets */
+.tweet                      1
+  /* záře odspodu */
+.card::before         1
+  /* útoky = řádky */
+.moves               1
+  0 = off ============ */
+.card            1
+  :lang(ar) .line                          1
+  :lang(ar) .next                          1
+  :lang(ar) .prev                          1
+  :lang(be)                                1
+  :lang(bg)                                1
+  :lang(el)                                1
+  :lang(ja) .line                          2
+  :lang(ja) .next                          1
+  :lang(ja) .prev                          1
+  :lang(kk)                                1
+  :lang(ko) .line                          2
+  :lang(ko) .next                          1
+  :lang(ko) .prev                          1
+  :lang(mk)                                1
+  :lang(sr)                                1
+  :lang(uk)                                1
+  :lang(vi)) :is(.line                     1
+  :lang(zh) .line                          3
+  :lang(zh) .next                          1
+  :lang(zh) .prev                          1
+  Greek and Vietnamese lines take Playfair Display 1
+  NO cover
+   ===================================================================== */
+.k-line[data-index$="9"] 1
+  [data-index$="3"]                        6
+  [data-index$="5"]                        6
+  [data-index$="7"]                        6
+  [data-index$="9"]) .line                 1
+  [data-index$="9"]) .line::before         1
+  [data-index$="9"]) .prev                 1
+  [data-index$="9"]) .prev::before         1
+  [data-index$="9"]) .read                 1
+  [data-index$="9"]) .typing               1
+  [data-kind="gap"]                        1
+  [data-kind="gap"] .line::before          1
+  [data-kind="intro"] .line::before        1
+  [data-kind="outro"] .line::before        1
+  [data-kind="outro"]) .w                  1
+  [data-kind=gap] .line::before            1
+  [data-kind=gap] .w                       1
+  [data-kind=intro] .issue .it             1
+  [data-kind=intro] .title                 1
+  [data-kind=outro] .cover                 1
+  [data-kind=outro] .line                  1
+  [data-kind=outro] .prev                  1
+  [data-kind=outro] .prev::after           1
+  [data-kind=outro] .title                 1
+  [data-kind=outro] .title::before         1
+  [dir=rtl] .issue                         1
+  [dir=rtl] .line                          1
+  [dir=rtl] .next                          1
+  [dir=rtl] .next::after                   1
+  [dir=rtl] .next::before                  1
+  [dir=rtl] .prev                          1
+  [dir=rtl] .prev::after                   1
+  [dir=rtl] .prev::before                  1
+  [dir=rtl] .tr                            1
+  as a back-page parting quote. */
+[data-kind=outro] .prev::before 1
+  big */
+.now                              1
+  black on a light cover: multiplies the tint down to a dark shade. */
+.shade 1
+  blurred cover behind the chat. Set brightness(0) for pure black. */
+.bg 1
+  break and outro */
+.screen               1
+  cyan outline                             1
+  dimmed */
+.old                           1
+  gap                                      1
+  gap and outro cards */
+.card:not([data-kind="line"]) .stats 1
+  glare                                    1
+  glitched */
+.k-line .screen              1
+  headline = the line. */
+
+.card           1
+  just its colours                         1
+  left)                                    1
+  left). */
+.prev                          1
+  newest message lowest */
+.chat           1
+  outro ---------- */
+
+[data-kind=intro] .line 1
+  phosphor mask                            1
+  picked by the last digit of the line number */
+.card[data-index$="0"] .rep::after 1
+  previous is received (grey               1
+  previous is sent (blue                   1
+  quoted                                   1
+  right)                                   1
+  right) */
+.card:is([data-index$="1"]     1
+  set like a page reference on a cover line. */
+.prev::before 1
+  set smaller as it
+   runs wider. */
+:is(:lang(ru) 1
+  so a crowded card pushes down instead of overlapping. */
+.prev 1
+  so each polarity gets its own profile. */
+.veil 1
+  so it gets at most two lines. */
+.line:not([data-line*=' ']) 1
+  so no cover                              1
+  so only a light cover gets it: a little dark under the white iOS clock. */
+.sky 1
+  so the threshold sees one colour all the way down. */
+.dark 1
+  tail bottom-left */
+.rx                  1
+  tail bottom-right (the current lyric) */
+.row 1
+  then the device's time */
+.read          1
+  title and artist below */
+.head          1
+  top left */
+.back                        1
+  vignette */
+.glass                       1
+  white on a light one.
+   Multiply only darkens and screen only lightens 1
+  white otherwise ---------- */
+
+.type     1
+
+=== var() NAMES ===
+  --accent                 13
+  --blue                   7
+  --bub                    2
+  --c1                     14
+  --c2                     3
+  --c3                     2
+  --chars                  4
+  --cover                  11
+  --cover-bg               1
+  --cyan                   5
+  --fit                    25
+  --g                      14
+  --g2                     1
+  --hi                     2
+  --i                      1
+  --index                  4
+  --k                      3
+  --o                      1
+  --orange                 1
+  --p                      3
+  --progress               2
+  --rainbow                2
+  --recv                   3
+  --red                    10
+  --s                      2
+  --safe-bottom            20
+  --safe-top               47
+  --scanlines              1
+  --sent                   2
+  --sh                     8
+  --w                      3
+  --words                  1
+  --yellow                 9
+
+=== COLOURS ===
+  #000                             55
+  #0000                            18
+  #0000ee                          1
+  #0000ff                          7
+  #008f11                          1
+  #00c8e8                          2
+  #00e5ff                          5
+  #00f                             1
+  #00ff41                          1
+  #020203                          1
+  #03080c                          1
+  #040303                          3
+  #050404                          1
+  #050507                          1
+  #06070b                          1
+  #070606                          1
+  #080706                          1
+  #0a0908                          1
+  #0a84ff                          1
+  #0b0908                          1
+  #0b0b0d                          3
+  #0b0c11                          1
+  #0b2230                          1
+  #0c0a09                          1
+  #0f0                             1
+  #10303c                          2
+  #111                             7
+  #120c07                          1
+  #120f0d                          1
+  #130d08                          1
+  #15110e                          1
+  #151311                          1
+  #15161b                          2
+  #16110d                          1
+  #1a1613                          1
+  #1b1a1f                          1
+  #1b2a6b                          2
+  #1c1c1c                          1
+  #1d1a2e                          2
+  #1d1b18                          1
+  #1d9bf0                          1
+  #26241f                          1
+  #29c8ff                          1
+  #2a1d12                          2
+  #2a2420                          1
+  #2b2a33                          1
+  #2b2b2e                          1
+  #2c2620                          2
+  #2f2a24                          1
+  #333                             1
+  #34312e                          1
+  #3a322b                          2
+  #3a342e                          1
+  #3a352f                          1
+  #3a3a3a                          1
+  #3dffa8                          1
+  #4a3624                          1
+  #5fd8ff                          3
+  #6cc8ee                          1
+  #6f665c                          1
+  #71767b                          3
+  #77716a                          1
+  #808080                          2
+  #82c9ee                          2
+  #86ffe0                          1
+  #888                             1
+  #8a8176                          1
+  #8c8cff                          1
+  #8dffa8                          1
+  #8e8e93                          3
+  #8e909b                          1
+  #8fb3c4                          2
+  #9a948c                          1
+  #9b9084                          1
+  #9c9ea8                          1
+  #9ea0aa                          2
+  #9fe8ff                          1
+  #a9abb6                          1
+  #b14dff                          1
+  #c4ecff                          2
+  #c8c8c8                          4
+  #c8c9d2                          1
+  #c9cad3                          1
+  #cfeeff                          1
+  #d0302b                          1
+  #dcdde4                          1
+  #ddd4c8                          1
+  #e24b4a                          1
+  #e7e9ea                          2
+  #e8461a                          2
+  #e9e9ef                          1
+  #eaf8ff                          2
+  #eaffea                          1
+  #ece5d6                          1
+  #ececf2                          1
+  #eeeff4                          1
+  #efe7da                          1
+  #f00                             1
+  #f1e9db                          2
+  #f2efe8                          1
+  #f2fbff                          1
+  #f3efe6                          1
+  #f4fbff                          6
+  #f4fff8                          1
+  #f6f1e7                          1
+  #f6f3ec                          1
+  #f6fff9                          1
+  #f7f7fb                          1
+  #f91880                          2
+  #ff1a00                          10
+  #ff2d75                          2
+  #ff4a3d                          4
+  #ff4d00                          1
+  #ff5b4d                          1
+  #ffd23f                          1
+  #ffd60a                          1
+  #ffe600                          7
+  #ffee00                          2
+  #fff                             42
+  #ffffff                          3
+  rgba(0, 0, 0, .1)                1
+  rgba(0, 0, 0, .15)               2
+  rgba(0, 0, 0, .2)                2
+  rgba(0, 0, 0, .25)               3
+  rgba(0, 0, 0, .28)               1
+  rgba(0, 0, 0, .3)                2
+  rgba(0, 0, 0, .5)                1
+  rgba(0, 0, 0, .65)               1
+  rgba(0, 0, 0, .75)               1
+  rgba(0, 0, 0, .8)                1
+  rgba(0, 0, 0, 0.22)              2
+  rgba(0, 0, 0, 0.32)              2
+  rgba(0, 0, 0, 0.45)              1
+  rgba(0, 0, 0, 0.6)               2
+  rgba(0, 0, 0, 0.65)              2
+  rgba(0, 0, 0, 0.7)               2
+  rgba(0, 0, 0, 0.8)               2
+  rgba(0, 0, 0, 0.85)              1
+  rgba(0, 0, 0, 0.9)               6
+  rgba(0, 230, 255, 0.55)          1
+  rgba(0, 255, 255, .8)            1
+  rgba(0, 255, 65, .12)            1
+  rgba(0, 255, 65, .15)            1
+  rgba(0, 255, 65, .35)            1
+  rgba(0, 255, 65, .45)            1
+  rgba(0, 255, 65, .5)             2
+  rgba(0, 255, 65, .55)            1
+  rgba(0, 255, 65, .7)             1
+  rgba(0, 255, 65, .75)            1
+  rgba(0, 255, 65, .85)            1
+  rgba(0,0,0,.25)                  1
+  rgba(0,0,0,.4)                   1
+  rgba(0,0,0,.6)                   1
+  rgba(0,0,0,.65)                  1
+  rgba(0,0,0,.72)                  1
+  rgba(110, 200, 235, 0.22)        1
+  rgba(120, 255, 160, 0.8)         1
+  rgba(14, 44, 56, 0.93)           1
+  rgba(150, 230, 255, 0.85)        2
+  rgba(170, 255, 220, 0.5)         1
+  rgba(2, 6, 9, 0.7)               1
+  rgba(2, 8, 12, 0.4)              1
+  rgba(255, 0, 0, .8)              1
+  rgba(255, 0, 60, 0.55)           1
+  rgba(255, 248, 225, .6)          1
+  rgba(255, 255, 255, .2)          1
+  rgba(255, 255, 255, .35)         1
+  rgba(255, 255, 255, .5)          1
+  rgba(255, 255, 255, .55)         3
+  rgba(255, 255, 255, .6)          2
+  rgba(255, 255, 255, 0.022)       2
+  rgba(255, 255, 255, 0.04)        2
+  rgba(255, 255, 255, 0.1)         2
+  rgba(255, 255, 255, 0.12)        1
+  rgba(255, 255, 255, 0.14)        1
+  rgba(255, 255, 255, 0.2)         1
+  rgba(255, 255, 255, 0.4)         2
+  rgba(255, 255, 255, 0.5)         1
+  rgba(255, 255, 255, 0.55)        1
+  rgba(255, 255, 255, 0.7)         2
+  rgba(255, 255, 255, 0.8)         1
+  rgba(255, 255, 255, 0.9)         1
+  rgba(255, 40, 40, 0.05)          2
+  rgba(255, 40, 90, 0.45)          1
+  rgba(255, 40, 90, 0.75)          1
+  rgba(255, 70, 60, 0.5)           1
+  rgba(255, 74, 61, 0.55)          1
+  rgba(255, 74, 61, 0.6)           1
+  rgba(255, 74, 61, 0.7)           1
+  rgba(255,255,255,.2)             2
+  rgba(255,255,255,.25)            1
+  rgba(3, 13, 18, 0.5)             1
+  rgba(40, 230, 255, 0.45)         1
+  rgba(40, 230, 255, 0.75)         1
+  rgba(40, 255, 40, 0.05)          2
+  rgba(40, 40, 255, 0.05)          2
+  rgba(44, 44, 48, 0.8)            2
+  rgba(46, 160, 132, 0.93)         1
+  rgba(8, 8, 10, 0.75)             1

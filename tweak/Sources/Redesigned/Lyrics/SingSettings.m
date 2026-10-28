@@ -18,9 +18,11 @@ static NSString *aboutSize(void) {
 }
 
 static NSString *footer(void) {
-    return @"Sing turns the vocals of the song playing down to sing over, from the microphone in its lyrics. "
-           "It works on iOS 18 or later. Choose the full model for the best separation (210 MB) or the light "
-           "model for a smaller download (31 MB). Each runs only on this iPhone. The switch and the download apply straight away.";
+    return [NSString stringWithFormat:
+        @"Sing turns the vocals of the song playing down to sing over, from the microphone in its lyrics. "
+         "It works on iOS 18 or later. Choose the full model for the best separation (%@) or the light "
+         "model for a smaller download (%@). Each runs only on this iPhone. The switch and the download apply straight away.",
+        SGSingModelSizeTextOf(SGSingModelFull), SGSingModelSizeTextOf(SGSingModelLight)];
 }
 
 static void tell(NSString *title, NSString *message) {

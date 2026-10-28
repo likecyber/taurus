@@ -1,25 +1,26 @@
-// Player redesign: the Visualizer background, a calm spectrum of what is playing behind the player, in the
-// cover's colors, over the Fluid field held still (PlayerField.x keeps the field Fluid for this choice, as for
+// Player redesign: the Visualizer background, what is playing drawn behind the player, in the cover's
+// colors, over the Fluid field held still (PlayerField.x keeps the field Fluid for this choice, as for
 // Animated, so the ⋯ menu moves between all six background styles without a restart).
 //
-// The sound is Spotify's output as it plays, read on the render thread through the audio effects' notify
-// (SGAudioSetOutputReader, Shared/AudioEffects/AudioEffects.h) into SGRSpectrum.m's bands. Here, on the main
-// thread, a display link reads the bands, brings them to a share of the song's own loudness (the loudest band of
-// the last few seconds at the top, so a quiet track moves as much as a loud one), eases each band up quickly
-// and down slowly, and draws two soft hills across the foot of the screen, mirrored about its middle, the bass
-// in the middle and the treble at either edge: a slow one behind, a quicker one in front. Each is a gradient of
-// the cover's colors (SGRPalette's flow colors, kept dark enough that white text on them stays over 5.5:1)
-// masked by a shape layer, so the render server does the drawing and the app only hands it two paths a frame.
+// What draws is the chosen shader (SGRShader.h) on Metal (SGRShaderView.m), or, without Metal or
+// before a shader is asked for, the two hills: a calm spectrum of the song across the foot of the
+// screen, in the cover's colors, drawn as two gradients masked by shape layers so the render server
+// does the drawing and the app only hands it two paths a frame. The hills take their bands from
+// SGRSpectrum.m's, fed by the pipeline's last stage (SpectrumTap.x) on the render thread; here, on the
+// main thread, a display link reads the bands, brings them to a share of the song's own loudness (the
+// loudest band of the last few seconds at the top, so a quiet track moves as much as a loud one),
+// eases each band up quickly and down slowly, and mirrors them about the middle, the bass in the
+// middle and the treble at either edge: a slow hill behind, a quicker one in front (SGRPalette's flow
+// colors, kept dark enough that white text on them stays over 5.5:1).
 //
-// It moves only while it is in a window, Spotify is in front, the player is not opening or closing, Low Power
+// Either view moves only while it is in a window, Spotify is in front, the player is not opening or closing, Low Power
 // Mode is off and the song plays; a pause lets the hills settle and the link stops, and nothing is read from
 // the sound while it is stopped. At most 60 frames a second, 30 while the lyrics, which have a link of their own,
 // are open and the hills are blurred behind them, and with Reduce Motion 15, with every band easing over
 // seconds. While the player opens or closes the link is down, and comes back only once the animation is over:
 // a link at 60 would hold the transition's 120 Hz down with it.
-//
-// ponytail: the hills follow what the output is handed, which a Bluetooth headset plays a fifth of a second or
-// so later. Music Haptics schedules for the output latency; do the same here if the beat looks early on AirPods.
+// ponytail: the hills follow what the output is handed, which a Bluetooth headset plays a fifth of a
+// second or so later. Music Haptics schedules for the output latency; do the same here if the beat looks early on AirPods.
 //
 // Threading: main thread only, but for the reader, which runs on the render thread.
 #import "Core/SGCore.h"
@@ -29,6 +30,7 @@
 #import "Shared/Player/PlayerState.h"
 #import "Shared/Player/SpeedPitch.h"
 #import "Player.h"
+#import "SGRShader.h"
 #import "SGRSpectrum.h"
 
 enum { kBands = SGRSpectrumBands, kPoints = 2 * kBands - 1 };
@@ -52,15 +54,16 @@ static const NSTimeInterval kTransitionSlack = 0.05;
 
 static NSUInteger sg_readers;
 
-// The reader on while any view is moving, so nothing is analyzed while none is.
+// The reader on while any view is moving, so nothing is analyzed while none is. The tap itself is
+// SpectrumTap.x's; this only says whether anyone is listening.
 static void needReader(BOOL need) {
     if (need) {
         if (sg_readers++ == 0) {
             SGRSpectrumPrepare();
-            /* no audio reader */
+            SGRSpectrumSetWanted(YES);
         }
     } else if (sg_readers && --sg_readers == 0) {
-        /* no audio reader */
+        SGRSpectrumSetWanted(NO);
     }
 }
 
@@ -74,7 +77,7 @@ static NSDictionary *noActions(void) {
     return none;
 }
 
-@interface SGRVisualiserView : UIView <SGPlayerStateObserver>
+@interface SGRVisualiserView : UIView <SGPlayerStateObserver, SGRVisualiserShowing>
 // Where the hills stand, in points from the top: the screen's foot in the player. 0 is the bounds' foot.
 @property (nonatomic) CGFloat baseline;
 // The height the hills are a share of; 0 is the bounds' height.
@@ -425,7 +428,10 @@ static void shape(CAShapeLayer *layer, const float *bands, CGFloat width, CGFloa
 
 #pragma mark - in the player
 
-static SGRVisualiserView *sg_view;
+// The Visualizer's view: the chosen shader's (SGRShaderView.m) when this iPhone draws Metal, the
+// hills' otherwise. Both answer to the same showing calls, declared on SGRVisualiserShowing, so the
+// field's code below never says which is up.
+static UIView<SGRVisualiserShowing> *sg_view;
 
 BOOL SGRPlayerVisualiserShowing(void) {
     SGRPlayerBackgroundKind background = SGRPlayerBackground();
@@ -434,15 +440,22 @@ BOOL SGRPlayerVisualiserShowing(void) {
             && SGRPlayerAnimatedFallback() == SGRPlayerBackgroundVisualiser);
 }
 
-// One preview view, reused: the Player page tears its old one down on every tap of the background control,
-// and each of those teardowns races the display link and the palette read it had just started.
+// One preview view of each kind, reused: the Player page tears its old one down on every tap of the
+// background control, and each of those teardowns races the display link and the palette read it had
+// just started. A different shader choice hands back a fresh view under the same identifier.
 UIView *SGRPlayerVisualiserPreview(void) {
-    static SGRVisualiserView *view;
-    if (!view) view = [[SGRVisualiserView alloc] initWithFrame:CGRectZero];
-    return view;
+    if (SGRShaderMetalAvailable()) {
+        static SGRShaderView *shader;
+        if (!shader || ![shader.shader.identifier isEqualToString:SGRShaderChosen().identifier])
+            shader = [[SGRShaderView alloc] initWithShader:SGRShaderChosen()];
+        return shader;
+    }
+    static SGRVisualiserView *hills;
+    if (!hills) hills = [[SGRVisualiserView alloc] initWithFrame:CGRectZero];
+    return hills;
 }
 
-// The hills from the top of the field to the foot of its bleed, standing on the screen's foot.
+// The view from the top of the field to the foot of its bleed, standing on the screen's foot.
 static void layOut(SGRArtworkField *field) {
     if (sg_view.superview != field) [field addSubview:sg_view];
     else if (field.subviews.lastObject != sg_view) [field bringSubviewToFront:sg_view];
@@ -450,8 +463,33 @@ static void layOut(SGRArtworkField *field) {
     CGFloat screen = field.window.bounds.size.height ?: size.height;
     CGRect frame = CGRectMake(0, 0, size.width, MAX(size.height, screen) + field.bleed.bottom);
     if (!CGRectEqualToRect(sg_view.frame, frame)) sg_view.frame = frame;
-    sg_view.baseline = screen;
-    sg_view.screenHeight = screen;
+    if ([sg_view isKindOfClass:SGRVisualiserView.class]) {
+        ((SGRVisualiserView *)sg_view).baseline = screen;
+        ((SGRVisualiserView *)sg_view).screenHeight = screen;
+    }
+}
+
+// What the field shows now, and what the choice asks for: when they disagree -- the shader changed,
+// or Metal said no after all -- the old view goes the way it came in.
+static BOOL showing(BOOL shader) {
+    if (shader) return [sg_view isKindOfClass:SGRShaderView.class]
+        && [((SGRShaderView *)sg_view).shader.identifier isEqualToString:SGRShaderChosen().identifier];
+    return sg_view != nil && [sg_view isKindOfClass:SGRVisualiserView.class];
+}
+
+static void putUp(SGRArtworkField *field, BOOL animated) {
+    BOOL shader = SGRShaderMetalAvailable();
+    if (showing(shader)) {
+        layOut(field);
+        return;
+    }
+    UIView<SGRVisualiserShowing> *old = sg_view;
+    sg_view = SGRPlayerVisualiserPreview();
+    layOut(field);
+    [sg_view appear:animated];
+    if (!old) return;
+    if (old.window) [old disappear:^{ [old removeFromSuperview]; }];
+    else [old removeFromSuperview];
 }
 
 void SGRPlayerVisualiserUpdate(void) {
@@ -460,21 +498,32 @@ void SGRPlayerVisualiserUpdate(void) {
     // player takes up when it next starts.
     BOOL wanted = SGRPlayerVisualiserShowing() && field && !SGRPlayerMotionShowing();
     if (!wanted) {
-        SGRVisualiserView *old = sg_view;
+        UIView<SGRVisualiserShowing> *old = sg_view;
         sg_view = nil;
-        if (old.window) [old disappear:^{ [old removeFromSuperview]; }];
-        else [old removeFromSuperview];
+        if (old) {
+            if (old.window) [old disappear:^{ [old removeFromSuperview]; }];
+            else [old removeFromSuperview];
+        }
         return;
     }
     BOOL made = !sg_view;
-    if (made) sg_view = [[SGRVisualiserView alloc] initWithFrame:CGRectZero];
-    layOut(field);
+    putUp(field, made ? NO : field.window != nil);
+    BOOL open = SGRPlayerLyricsOpen();
     if (made) {
-        [sg_view setBlurred:SGRPlayerLyricsOpen() animated:NO];
-        [sg_view appear:field.window != nil];
+        [sg_view setBlurred:open animated:NO];
         SGLog(@"redesign player: visualizer on the field");
-    } else {
-        BOOL open = SGRPlayerLyricsOpen();
-        if (open != sg_view.blurred) [sg_view setBlurred:open animated:sg_view.window != nil];
+    } else if (open != sg_view.blurred) {
+        [sg_view setBlurred:open animated:sg_view.window != nil];
     }
+}
+
+// The choice or its catalog moving: the field takes the new one up the next time it lays the view
+// out, which this asks for at once.
+__attribute__((constructor)) static void SGVisualiserWatchShaderChange(void) {
+    [[NSNotificationCenter defaultCenter] addObserverForName:SGRShaderDidChangeNotification object:nil queue:nil
+                                                 usingBlock:^(NSNotification *_) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (sg_view && !showing(SGRShaderMetalAvailable())) SGRPlayerVisualiserUpdate();
+        });
+    }];
 }

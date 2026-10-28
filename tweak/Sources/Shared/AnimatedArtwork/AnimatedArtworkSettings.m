@@ -5,6 +5,7 @@
 #import "Settings/SGPageStyle.h"
 #import "Settings/SGSourcesPage.h"
 #import "AnimatedArtwork.h"
+#import "Shared/LockCard/SGCardEngine.h"
 #import "Shared/LockScreenArtwork/LockScreenArtwork.h"
 #import "Shared/LockScreenLyrics/LockScreenLyrics.h"
 
@@ -16,6 +17,38 @@ static NSString *const kStarColorful = @"colorful";
 
 static BOOL starViewOrderContains(NSString *key) {
     return [SGLockScreenStarViewOrder() containsObject:key];
+}
+
+// The lyrics clips' card choice: Off, the three built-ins, then the catalog's, re-read every time the
+// page builds so styles that landed with the catalog are on the list.
+static SGModRow *lockCardStyleRow(void) {
+    NSMutableArray<NSString *> *choices = [NSMutableArray arrayWithObject:@"Off"];
+    NSMutableArray<NSString *> *ids = [NSMutableArray arrayWithObject:@"off"];
+    for (NSDictionary *style in SGLockCardBuiltinStyles().allValues) {
+        [choices addObject:style[@"name"] ?: @"Card"];
+        [ids addObject:style[@"id"] ?: @"" ];
+    }
+    for (NSDictionary *style in SGLockCardCatalogStyles()) {
+        [choices addObject:style[@"name"] ?: @"Card"];
+        [ids addObject:style[@"id"] ?: @""];
+    }
+    NSString *chosen = [NSUserDefaults.standardUserDefaults stringForKey:SGKeyLockCardStyle] ?: @"off";
+    NSString *current = nil;
+    for (NSDictionary *style in [SGLockCardBuiltinStyles() allValues])
+        if ([style[@"id"] isEqualToString:chosen]) current = style[@"name"];
+    for (NSDictionary *style in SGLockCardCatalogStyles())
+        if ([style[@"id"] isEqualToString:chosen]) current = style[@"name"];
+    SGModRow *row = SGMenuRow(@"Lyrics card", choices,
+        ^NSString * { return current ?: @"Off"; }, ^(NSInteger index) {
+            if ((NSUInteger)index < ids.count) {
+                [NSUserDefaults.standardUserDefaults setObject:ids[(NSUInteger)index] forKey:SGKeyLockCardStyle];
+                SGLockCardRegisterFonts();
+            }
+        });
+    row.subtitle = @"Draws the lock-screen lyrics as a styled card, from the catalog";
+    row.visible = ^BOOL { return SGLockScreenLyricsViewEnabled() && starViewOrderContains(kStarLyrics); };
+    row.refreshOn = SGCatalogDidChangeNotification;
+    return row;
 }
 
 NSArray *SGLockScreenMotionRows(void) {
@@ -31,6 +64,7 @@ NSArray *SGLockScreenMotionRows(void) {
         SGModRow *style = SGChoiceRow(@"Lyrics style", @"Still draws each line once; Animated breathes the cover behind it",
                                       SGKeyLockScreenLyricsStyle, @[@"Still", @"Animated"], 0);
         style.visible = ^BOOL { return SGLockScreenLyricsViewEnabled() && starViewOrderContains(kStarLyrics); };
+        SGModRow *card = lockCardStyleRow();
         SGModRow *exclusiveLyrics = SGSwitchRow(@"Automatically switch lyric styles",
             @"Turn off artist-name lyrics while lock-screen Lyrics is selected, and restore them when it is not",
             SGKeyLockScreenExclusiveLyrics);
@@ -57,6 +91,7 @@ NSArray *SGLockScreenMotionRows(void) {
             starViews,
             lyrics,
             style,
+            card,
             exclusiveLyrics,
             star,
             sources,

@@ -3,6 +3,7 @@
 #import "Settings/SGPage.h"
 #import "Settings/SGPageStyle.h"
 #import "AudioEffectsPage.h"
+#import "AudioEffectsPresets.h"
 #import "SGDSPCurveView.h"
 
 typedef NS_ENUM(NSInteger, SGDSPRowKind) {
@@ -493,9 +494,15 @@ static UIView *valueAndChevron(NSString *text) {
 
 #pragma mark - rows
 
-// Section 0 is the effects' switch, then a card per effect, then the reset.
+// Section 0 is the effects' switch, then a card per effect, then the presets' and headphones' pages
+// beside the reset.
 - (SGDSPEffect *)effectIn:(NSInteger)section {
     return section >= 1 && section <= (NSInteger)_effects.count ? _effects[(NSUInteger)section - 1] : nil;
+}
+
+// The last section holds two rows, the Presets and Headphones pages, after the reset's one.
+- (BOOL)isTailSection:(NSInteger)section {
+    return section == (NSInteger)_effects.count + 1;
 }
 
 - (BOOL)isOpen:(SGDSPEffect *)e {
@@ -512,6 +519,7 @@ static UIView *valueAndChevron(NSString *text) {
 }
 
 - (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {
+    if ([self isTailSection:section]) return 3;   // the reset, then Presets, then Headphones
     SGDSPEffect *e = [self effectIn:section];
     return e ? [self rowCountOf:e] : 1;
 }
@@ -577,12 +585,27 @@ static UIView *valueAndChevron(NSString *text) {
     SGDSPEffect *e = [self effectIn:path.section];
     if (!e) {
         UITableViewCell *cell = SGDequeueCell(table, @"reset");
-        SGFillCell(cell, @"Reset all effects", nil, SGRed(), @"arrow.counterclockwise");
-        UIListContentConfiguration *content = (UIListContentConfiguration *)cell.contentConfiguration;
-        content.secondaryTextProperties.color = SGRed();
-        cell.contentConfiguration = content;
+        if (path.row == 0) {
+            SGFillCell(cell, @"Reset all effects", nil, SGRed(), @"arrow.counterclockwise");
+            UIListContentConfiguration *content = (UIListContentConfiguration *)cell.contentConfiguration;
+            content.secondaryTextProperties.color = SGRed();
+            cell.contentConfiguration = content;
+            cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+            cell.separatorInset = UIEdgeInsetsMake(0, 48, 0, 0);
+            return cell;
+        }
+        // The two pages the presets and the headphones' corrections live on.
+        if (path.row == 1) {
+            SGFillCell(cell, @"Presets", @"Built in, community, and yours", nil, nil);
+            cell.accessoryView = valueAndChevron(nil);
+            cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+            cell.separatorInset = UIEdgeInsetsMake(0, 16, 0, 0);
+            return cell;
+        }
+        SGFillCell(cell, @"Headphones", SGDSPHeadphoneSummary(), nil, nil);
+        cell.accessoryView = valueAndChevron(nil);
         cell.selectionStyle = UITableViewCellSelectionStyleDefault;
-        cell.separatorInset = UIEdgeInsetsMake(0, 48, 0, 0);
+        cell.separatorInset = UIEdgeInsetsMake(0, 16, 0, 0);
         return cell;
     }
     if (path.row == 0) {
@@ -650,8 +673,10 @@ static UIView *valueAndChevron(NSString *text) {
 
 - (void)tableView:(UITableView *)table didSelectRowAtIndexPath:(NSIndexPath *)path {
     [table deselectRowAtIndexPath:path animated:YES];
-    if (path.section == (NSInteger)_effects.count + 1) {
-        [self confirmReset];
+    if ([self isTailSection:path.section]) {
+        if (path.row == 0) [self confirmReset];
+        else if (path.row == 1) [self.navigationController pushViewController:SGDSPPresetsPage() animated:YES];
+        else [self.navigationController pushViewController:SGDSPHeadphonesPage() animated:YES];
         return;
     }
     SGDSPRow *row = [self rowAt:path];
@@ -661,7 +686,7 @@ static UIView *valueAndChevron(NSString *text) {
 }
 
 - (BOOL)tableView:(UITableView *)table shouldHighlightRowAtIndexPath:(NSIndexPath *)path {
-    if (path.section == (NSInteger)_effects.count + 1) return YES;
+    if ([self isTailSection:path.section]) return YES;
     SGDSPRow *row = [self rowAt:path];
     return row && (row.kind == SGDSPRowChoice || row.kind == SGDSPRowPage);
 }

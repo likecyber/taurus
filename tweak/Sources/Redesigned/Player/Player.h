@@ -69,7 +69,6 @@ void SGRPlayerLyricsChanged(void);
 // The system volume slider below the player controls.
 #define SGRKeyPlayerVolume @"spotifyglass.redesign.player.volume"
 #define SGRKeyHidePlayerVolume @"spotifyglass.redesign.player.hideVolume"
-#define SGRKeyHidePlayerVolumeThumb @"spotifyglass.redesign.player.hideVolumeThumb"
 BOOL SGRPlayerVolumeOn(void);
 BOOL SGRPlayerPlaceVolume(UIView *stack, UIView *controls, UIView *row, CGFloat margin);
 // PlayerLyrics.x: whether the lyrics fade holds the given bottom-stack view; while it does,

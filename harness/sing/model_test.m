@@ -1,18 +1,22 @@
-// The production voice model download (Shared/Sing/SGSingModel.m) against a local server model_test.py
-// runs: the real background URL session, the pinned sizes and hashes, the staging folder and the move
-// into place. The server can corrupt a file, slow the weights down and count the requests it answers.
-//   model-test all        a corrupted file rejected, a cancel resumed, the install, removal
-//   model-test leave      starts a slow download and exits with it running
+// The production voice model download (Shared/Sing/SGSingModel.m, over Shared/Catalog/SGCatalog.m)
+// against a local server model_test.py runs: the catalog answered, every file checked against its size
+// and SHA-256, a corrupted file rejected, a cancel keeping the files already in, the install, and
+// removal. The catalog fetches a file whole, so there is no picking a file up inside itself; what a
+// cancel keeps is the files that landed whole before it.
+//   model-test all        a corrupted file rejected, a cancel keeping what came in, the install, removal
+//   model-test leave      starts a throttled download and exits with it running
 //   model-test reconnect  picks that download up the way a launch does, and waits for the install
 #import <Foundation/Foundation.h>
 #import "Shared/Sing/SGSingModel.h"
+#import "Shared/Catalog/SGCatalog.h"
 #import <assert.h>
 
 static unsigned purges;
 void SGStemWorkerPurge(void) { purges++; }
 
-static NSString *serverBase(void) { return SGSingModelBase; }
+static NSString *serverBase(void) { return SGCatalogBase; }
 static NSURL *folder(void) { return [NSURL fileURLWithPath:[SGSingModelRoot stringByAppendingPathComponent:@"spoti.pw/Sing"]]; }
+static NSURL *store(void) { return [NSURL fileURLWithPath:[SGSingModelRoot stringByAppendingPathComponent:@"spoti.pw/Catalog/sing"]]; }
 
 // The server's control endpoint, asked outside the main queue so the main run loop can wait for it.
 static NSDictionary *control(NSString *query) {
@@ -46,7 +50,7 @@ static void checkInstalled(void) {
     assert([model isEqualToString:under(@"separator.mlmodelc").path]);
     for (NSString *name in @[@"weights/weight.bin", @"model.mil", @"metadata.json", @"coremldata.bin", @"analytics/coremldata.bin"])
         assert(exists([NSURL fileURLWithPath:[model stringByAppendingPathComponent:name]]));
-    assert(!exists(under(@"Download-vitrine-ane")));
+    assert(!exists(store()));   // the whole store folder became the installed one
     NSNumber *excluded = nil;
     [folder() getResourceValue:&excluded forKey:NSURLIsExcludedFromBackupKey error:nil];
     assert(excluded.boolValue);
@@ -57,7 +61,8 @@ static void removeAll(void) {
     unsigned before = purges;
     SGSingModelRemove();
     assert(SGSingModelCurrentState() == SGSingModelMissing && !SGSingModelPath() && purges == before + 1);
-    assert(waitFor(10, ^{ return (BOOL)!exists(folder()); }));
+    assert(waitFor(10, ^{ return (BOOL)!exists(under(@"separator.mlmodelc")); }));
+    assert(!exists([store() URLByAppendingPathComponent:@"model-1"]));
 }
 
 static void corrupted(void) {
@@ -66,43 +71,39 @@ static void corrupted(void) {
     assert(SGSingModelCurrentState() == SGSingModelDownloading);
     assert(waitFor(120, ^{ return (BOOL)(SGSingModelFailure() != nil); }));
     assert(SGSingModelCurrentState() == SGSingModelMissing && !SGSingModelPath());
-    assert([SGSingModelFailure() containsString:@"didn't match"]);
-    // The corrupted graph is gone; nothing was put in place.
-    assert(!exists(under(@"Download-vitrine-ane/3.part")) &&
-           !exists(under(@"Download-vitrine-ane/separator.mlmodelc/model.mil")));
+    assert([SGSingModelFailure() containsString:@"did not match"]);
+    // The corrupted file was refused, and nothing was put in place.
     assert(!exists(under(@"separator.mlmodelc")));
-    printf("corrupted model.mil rejected and deleted: %s\n", SGSingModelFailure().UTF8String);
-    removeAll();
+    printf("corrupted model.mil rejected: %s\n", SGSingModelFailure().UTF8String);
+    SGSingModelRemove();
+    assert(waitFor(10, ^{ return (BOOL)!exists(store()); }));
 }
 
-static void cancelAndResume(void) {
+// The small files land whole while the weights crawl, so a cancel keeps them; the next download asks
+// for the weights alone.
+static void cancelKeepsFiles(void) {
     control(@"corrupt=0&throttle=40000000&reset=1");
     SGSingModelDownload(NO);
-    assert(waitFor(60, ^{ return (BOOL)(SGSingModelReceived() > 100ll << 20); }));
+    int64_t full = SGSingModelSize();
+    assert(waitFor(120, ^{ return (BOOL)(SGSingModelReceived() > 0 && SGSingModelReceived() < full); }));
     SGSingModelCancel();
     assert(SGSingModelCurrentState() == SGSingModelMissing && !SGSingModelFailure());
-    // The weights keep what came in for the resume, written once the task hands it over.
-    assert(waitFor(10, ^{ return (BOOL)exists(under(@"Download-vitrine-ane/4.resume")); }));
     int64_t kept = SGSingModelReceived();
-    assert(kept > 100ll << 20 && kept < SGSingModelSize());
-    printf("cancelled at %lld of %lld bytes, resume kept\n", kept, SGSingModelSize());
+    assert(kept > 0 && kept < full);
+    assert(waitFor(10, ^{ return (BOOL)(SGSingModelReceived() == kept); }));   // the file on the wire settles, and is kept or refused whole
+    printf("cancelled with %lld of %lld bytes in\n", kept, full);
 
     control(@"throttle=0&reset=1");
     SGSingModelDownload(NO);
     assert(SGSingModelCurrentState() == SGSingModelDownloading);
-    // The progress goes on from what was kept rather than starting from nothing again.
-    __block int64_t lowest = INT64_MAX;
-    assert(waitFor(300, ^{
-        if (SGSingModelCurrentState() == SGSingModelDownloading) lowest = MIN(lowest, SGSingModelReceived());
-        return (BOOL)(SGSingModelCurrentState() == SGSingModelInstalled || SGSingModelFailure());
-    }));
-    assert(lowest >= kept - (4ll << 20));
+    assert(waitFor(300, ^{ return (BOOL)(SGSingModelCurrentState() == SGSingModelInstalled || SGSingModelFailure()); }));
     if (SGSingModelFailure()) { fprintf(stderr, "failed: %s\n", SGSingModelFailure().UTF8String); abort(); }
     checkInstalled();
     NSDictionary *stats = control(@"stats=1");
-    long long offset = [stats[@"weights/weight.bin"] longLongValue];
-    printf("resumed the weights from byte %lld, installed\n", offset);
-    assert(offset > 100ll << 20);
+    NSDictionary *requests = stats[@"requests"];
+    // Every file but the weights was already in, so only the weights were asked for again.
+    assert(requests.count == 1 && requests[[NSString stringWithFormat:@"sing/model-1/%@", @"weights/weight.bin"]]);
+    printf("the files already in were not asked for again; installed\n");
 }
 
 int main(int argc, char **argv) { @autoreleasepool {
@@ -110,26 +111,26 @@ int main(int argc, char **argv) { @autoreleasepool {
     if ([mode isEqualToString:@"all"]) {
         [NSUserDefaults.standardUserDefaults removeObjectForKey:SGKeySingModelDownload];
         [NSUserDefaults.standardUserDefaults removeObjectForKey:SGKeySingModel];
-        assert(SGSingModelCurrentState() == SGSingModelMissing && SGSingModelSize() == 210426814);
-        assert([SGSingModelBytesText(SGSingModelSize()) isEqualToString:@"201 MB"]);
-        assert([SGSingModelSizeTextOf(SGSingModelFull) isEqualToString:@"210 MB"]);
-        assert([SGSingModelSizeTextOf(SGSingModelLight) isEqualToString:@"31 MB"]);
+        assert(SGSingModelCurrentState() == SGSingModelMissing && SGSingModelSize() > (100ll << 20));
+        assert([SGSingModelSizeTextOf(SGSingModelFull) containsString:@"MB"]);
         SGSingModelChoose(SGSingModelLight);
         assert(SGSingModelChosen() == SGSingModelLight && SGSingModelCurrentState() == SGSingModelMissing);
-        assert(SGSingModelSize() == 30760023);
+        int64_t light = SGSingModelSize();
+        assert(light > 0 && light < (16ll << 20));
+        assert([SGSingModelSizeTextOf(SGSingModelLight) containsString:@"MB"]);
         SGSingModelChoose(SGSingModelFull);
-        assert(SGSingModelChosen() == SGSingModelFull && SGSingModelSize() == 210426814);
+        assert(SGSingModelChosen() == SGSingModelFull && SGSingModelSize() > (100ll << 20));
         corrupted();
-        cancelAndResume();
+        cancelKeepsFiles();
         removeAll();
-        printf("model download: corrupted file rejected, cancel and resume, install, removal passed\n");
+        printf("model download: corrupted file rejected, cancel kept its files, install, removal passed\n");
     } else if ([mode isEqualToString:@"leave"]) {
         control(@"corrupt=0&throttle=40000000&reset=1");
         SGSingModelDownload(NO);
-        assert(waitFor(60, ^{ return (BOOL)(SGSingModelReceived() > 50ll << 20); }));
+        assert(waitFor(120, ^{ return (BOOL)(SGSingModelReceived() > 0); }));
         assert([NSUserDefaults.standardUserDefaults integerForKey:SGKeySingModelDownload] == 1);
         printf("left the download running at %lld bytes\n", SGSingModelReceived());
-        exit(0);   // no cancel: the session's tasks outlive the process, as they outlive a suspended app
+        exit(0);   // no cancel: whatever landed whole stays for the next process, as a suspended app's would
     } else if ([mode isEqualToString:@"reconnect"]) {
         control(@"throttle=0");
         assert(SGSingModelCurrentState() == SGSingModelMissing);
@@ -140,7 +141,8 @@ int main(int argc, char **argv) { @autoreleasepool {
         checkInstalled();
         assert(![NSUserDefaults.standardUserDefaults objectForKey:SGKeySingModelDownload]);
         NSDictionary *stats = control(@"stats=1");
-        printf("reconnected at launch and installed; the weights were requested %lld time(s)\n", [stats[@"requests"] longLongValue]);
+        printf("reconnected at launch and installed; %lu file request(s) came after the ones kept\n",
+               (unsigned long)[stats[@"requests"] count]);
         removeAll();
     }
 } return 0; }

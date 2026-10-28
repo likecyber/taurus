@@ -16,7 +16,7 @@ FLEX_ARG := $(if $(filter 0,$(FLEX)),--no-flex,)
 DEV_NAME ?= Taurus.dev
 DEV_ICON ?= docs/icon.png
 
-.PHONY: build release install trees session log flags
+.PHONY: build release install trees session log flags audit
 build:    ## FLEX + glass IPA into out/
 	bash ./scripts/pipeline.sh $(IPA) $(SAFARI_ARG)
 release:  ## glass only, no FLEX
@@ -31,6 +31,8 @@ log:     ## stream the tweak's log lines from the phone
 	./scripts/dump-log.sh
 flags:    ## regenerate tweak/Sources/Shared/Flags/SGFlagList.m, Spotify's remote-config flags, from the IPA
 	./scripts/extract-flags.py $(IPA)
+audit:    ## static Logos class/selector and look-gate compatibility against Spotify 9.1.94
+	python3 ./scripts/audit-spotify-hooks.py $(IPA)
 
 .PHONY: test-safari
 test-safari:  ## link routing, lifecycle and extension packaging regression checks

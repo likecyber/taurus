@@ -6,6 +6,7 @@
 // take its place at the same size, each weight as the family's nearest face. Read at launch.
 #import <CoreText/CoreText.h>
 #import "Core/SGCore.h"
+#import "Shared/Fonts/FontCatalog.h"
 #import "Shared/Fonts/Fonts.h"
 
 static SGAppFont sg_font;
@@ -161,7 +162,11 @@ NSArray<NSString *> *SGAppFontFamilies(void) {
 
 %ctor {
     sg_font = SGAppFontChosen();
-    if (sg_font == SGAppFontSpotify) return;
+    if (sg_font == SGAppFontSpotify) {
+        // The catalog's fonts register even while Spotify's own is kept, so the Font page can draw them.
+        SGFontCatalogRegisterInstalled();
+        return;
+    }
     // A process-wide registration ends with the process, so the file is registered again before any hook
     // runs. A file that is gone (a restored backup, a reinstall) leaves Spotify's font and keeps the choice,
     // so importing again is all it takes; Circular imported as a file of its own needs nothing done either.
@@ -174,7 +179,8 @@ NSArray<NSString *> *SGAppFontFamilies(void) {
     }
     if (sg_font == SGAppFontFamily) {
         NSString *name = [NSUserDefaults.standardUserDefaults stringForKey:SGKeyAppFontFamily];
-        if (![SGAppFontFamilies() containsObject:name]) {
+        // a family of the catalog has its files registered first, so its faces are there to be found
+        if (![SGAppFontFamilies() containsObject:name] && !SGFontCatalogHasFamily(name)) {
             SGLog(@"fonts: the family %@ is not on this iPhone, Spotify's stays", name);
             return;
         }

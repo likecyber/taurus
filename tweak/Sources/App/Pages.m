@@ -11,6 +11,7 @@
 #import "Shared/LyricsTranslation/LyricsTranslation.h"
 #import "Shared/Fonts/Fonts.h"
 #import "Shared/ListeningStats/ListeningStats.h"
+#import "Shared/LockCard/SGCardEngine.h"
 #import "Shared/Lossless/SGLossless.h"
 #import "Shared/Player/PlayerSettings.h"
 #import "Native/Appearance/Appearance.h"
@@ -21,6 +22,7 @@
 #import "Shared/LiveActivity/LiveActivity.h"
 #import "Redesigned/Lyrics/LyricsText.h"
 #import "Redesigned/Lyrics/LyricsLook.h"
+#import "Redesigned/Lyrics/LyricsShaderSettings.h"
 #import "Redesigned/Home/Home.h"
 #import "Redesigned/Navbar/Navbar.h"
 #import "Redesigned/NowPlayingBar/NowPlayingBar.h"
@@ -118,7 +120,9 @@ UIViewController *SGNavbarPage(void) {
 // Pronunciation, translation, word sweeping and line meanings exist only in the redesign's lyrics.
 UIViewController *SGLyricsSettingsPage(void) {
     BOOL redesigned = SGRedesignedUIStored();
-    NSMutableArray<SGModRow *> *more = [NSMutableArray arrayWithObject:SGLockScreenLyricsRow()];
+    SGModRow *card = SGPageRow(@"Lock screen card", ^UIViewController * { return SGLockCardStylesPage(); });
+    card.visible = ^BOOL { return @available(iOS 26.0, *); };
+    NSMutableArray<SGModRow *> *more = [NSMutableArray arrayWithObjects:SGLockScreenLyricsRow(), card, nil];
     if (!redesigned) [more insertObject:SGGlassLyricsRow() atIndex:0];
     NSMutableArray<SGModSection *> *sections = [NSMutableArray arrayWithObject:SGLyricsSourcesSection(redesigned)];
     if (redesigned) {
@@ -128,6 +132,8 @@ UIViewController *SGLyricsSettingsPage(void) {
             SGLyricsWordTimingRow(), SGLyricsRomanisedRow(), SGLyricsDelayRow(),
             SGRLyricsTextSizesRow(), SGLyricsTranslationLanguageRow(), SGLyricsMeaningsRow(), SGLyricsMeaningMarkersRow()])];
         [sections addObject:SGSection(@"Translation", @[SGTranslateEverySongRow(), SGGeminiKeyRow(), SGSavedTranslationsRow()])];
+        [sections addObject:SGNotedSection(@"Look", @[SGRLyricsShaderLookRow(), SGRLyricsShaderBrowseRow(), SGRLyricsShaderMyRow()],
+                                           @"Lyrics shaders are separate from Player > Visualizer. Player shaders never consume the downloadable lyrics-shaders catalog." )];
     }
     [sections addObject:SGSection(nil, more)];
     // The redesign's page leads with a live preview of the lyrics, a glass pill to search the song it plays,

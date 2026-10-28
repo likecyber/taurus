@@ -1,8 +1,8 @@
 # Sing
 
 Sing balances the background and vocals while Spotify plays, from the redesigned player's lyrics:
-background-only at 0, the full track at 50, and vocals-only at 100. The stems are separated on the iPhone by Vitrine's full Neural Engine
-Core ML export of Mel-Band RoFormer, mirrored at `My-Name-Is-Jeff/vitrine-sing`; no audio leaves
+background-only at 0, the full track at 50, and vocals-only at 100. The stems are separated on the iPhone by a
+Core ML export of Mel-Band RoFormer; no audio leaves
 the phone. It needs iOS 18.
 
 ## Audio and model integration
@@ -52,11 +52,13 @@ format failures stop Sing and keep the original audio playing.
 
 ## The model
 
-The Karaoke settings let the user choose Vitrine's full `separator-ane.mlmodelc` or smaller
-`separator-light.mlmodelc` (Mini-BS-RoFormer-18M). Each model's five files are downloaded from its
-matching folder at `https://huggingface.co/My-Name-Is-Jeff/vitrine-sing/resolve/main/`, pinned by
-size and SHA-256 in `SGSingModel.m`, and kept in separate installed and resumable-download folders.
-Both Vitrine exports use the same two-second spectral contract: `spectrum` `[1, 2050, 201, 2]` in,
+The Karaoke settings let the user choose the catalog's full model (version 1) or its light one
+(version 101, Mini-BS-RoFormer-18M). Each model's files are listed by `sing/catalog.json`, fetched
+from the asset catalog (Shared/Catalog) at `sing/model-<version>/...`, every file carried with a size
+and SHA-256 the catalog checks on the way in, and installed into its own folder under
+`Application Support/spoti.pw/Sing`. A copy of the catalog as it shipped is compiled into
+`SGSingModel.m`, so the sizes and hashes are known before the first fetch.
+Both exports use the same two-second spectral contract: `spectrum` `[1, 2050, 201, 2]` in,
 `vocals_spectrum` out. Their Core ML schemas use Float16 input and output; the worker supplies the
 Float32 input accepted by both models and converts the Float16 output to Float32. The worker performs
 the 2,048-point periodic-Hann STFT and its inverse with Accelerate, using reflected boundaries, a
@@ -73,7 +75,7 @@ it on memory or thermal pressure.
 The separator loads with `.cpuOnly` as a fallback and with `.cpuAndNeuralEngine` for use while
 Spotify is active. If the app backgrounds during a Neural Engine prediction, the worker retries the
 window on CPU with its timestamp kept; a failed accelerated copy leaves CPU inference available.
-Vitrine reports 14.58 dB SDR on four MUSDB18 excerpts and 226–359 ms per 1.5 seconds of audio on an
+The export's upstream reports 14.58 dB SDR on four MUSDB18 excerpts and 226–359 ms per 1.5 seconds of audio on an
 iPhone 15 Pro. These are the mirror's measurements, not validation of this tweak's end-to-end audio
 pipeline. The production model's latency, quality and locked-screen behavior still need device
 verification.
@@ -82,7 +84,7 @@ verification.
 
 The DSP, timeline, controller and Swift utility tests do not validate the production separator.
 The golden/model comparison utilities here and under Legacy export use the previous local model.
-Use the Vitrine fixture and downloader test below for production bundle integrity; on-device
+Use the staged fixture and downloader test below for production bundle integrity; on-device
 separation quality and playback still need device verification.
 
 ```sh
@@ -156,7 +158,7 @@ and writes `Documents/progress.json` and `Documents/result.json`. It runs no Spo
 ## Legacy export and comparison tooling
 
 The exporter and model-comparison tools below describe the previous local Float32 model. They are
-not used to produce or validate the Vitrine bundle downloaded by the app.
+not used to produce or validate the bundle downloaded by the app.
 
 `export_coreml.py` takes the pinned conversion and reference checkouts, the checkpoint, the
 original golden input and a new output directory. It verifies their provenance, traces the
@@ -178,7 +180,9 @@ with it.
 python harness/sing/export_coreml.py zoo ref MelBandRoformer.ckpt build/goldens/golden_raw.f32 export --unpinned-tools
 ```
 
-The app downloads Vitrine's pinned `separator-ane.mlmodelc` bundle instead.
+The app downloads the catalog's pinned full bundle instead.
+
+The redesigned Lyrics settings use the same shared catalog boundary for lyrics shaders: the catalog list is searchable without downloading shader source, a style's detail page previews its metadata and requires an explicit download before it is used, and My shaders reports cached or favourited styles. Remove download removes only that style's cached JSON; favourites and parameter values remain. Lyrics shader parameters are stored separately from Player Visualizer parameters and are applied through `SGRLyricsShaderParamValues` / `SGRLyricsShaderSetParamValue`.
 
 ## The model on the phone
 
@@ -189,41 +193,34 @@ Checking…, Downloaded with Remove voice model, or Paused / Download failed, wh
 Each model keeps its own installed files and partial download, so choosing one does not remove the
 other. Below iOS 18 the section is a "Needs iOS 18" row.
 
-`Shared/Sing/SGSingModel.m` downloads each model's five files one by one (no archive: iOS has no
-public unzip) and pins each file's size and SHA-256; nothing the server says about them is trusted.
-It checks for free space first (the selected model plus 64 MB), asks before using a cellular or Low
-Data Mode network, and otherwise keeps off them and waits for Wi-Fi. The download runs in a
-background `URLSession`, so it goes on while Spotify is away; the app delegate is given
-`application:handleEventsForBackgroundURLSession:completionHandler:` for it (Spotify's has none), and
-a launch reconnects to a download left running by the session's identifier. Each file is hashed off
-the main thread and staged under the selected model's own folder only if it is the pinned one; a file
-that is not is deleted and stops the download. Cancel keeps each
-file's resume data, and Download goes on from it (a resume that fails starts that file over, once).
-Once every file is in, the staged model becomes its installed folder in one rename, and the Sing
-folder is excluded from the iCloud backup. Remove deletes only the selected model's files and drops
-the warm model. The controller loads the selected model from there; without it Sing is unavailable
-and the lyrics show no microphone.
+`Shared/Sing/SGSingModel.m` downloads each model's files one by one through the catalog (no archive:
+iOS has no public unzip), the catalog checking each file's size and SHA-256 before it is kept;
+nothing unchecked lands. It checks for free space first (the selected model plus 64 MB), asks before
+using a cellular or Low Data Mode network, and otherwise keeps off them and waits for Wi-Fi. The
+download runs in ordinary sessions while Spotify lives; a launch reconnects to a download left
+running and asks for the files still missing. Cancel keeps the files that landed whole, and Download
+asks only for the rest. Once every file is in, the catalog store's model folder becomes its installed
+folder in one rename, and the Sing folder is excluded from the iCloud backup. Remove deletes only the
+selected model's files and drops the warm model. The controller loads the selected model from there;
+without it Sing is unavailable and the lyrics show no microphone.
 
 ```sh
-python3 harness/sing/stage_model.py /path/to/vitrine/separator-ane.mlmodelc build/model-fixture
+python3 harness/sing/stage_model.py /path/to/separator.mlmodelc build/model-fixture
 python3 harness/sing/model_test.py build/model-fixture
 ```
 
-`stage_model.py` stages the exact pinned Vitrine full-model bundle as a local fixture; it uploads
-nothing. `model_test.py` serves that folder on localhost and runs the production download code against
-it in a real background session on the Mac (ASan/UBSan): a corrupted `model.mil` rejected and deleted,
-a cancel at 100 MB resumed from where it stopped (the server sees the range), the install, a download
-left running by one process and picked up by the next, and removal. The light-model descriptor and
-size choice are checked by that harness; a full light-bundle download still needs a matching local
-fixture and device verification.
+`stage_model.py` stages the exact full-model bundle as a local fixture; it uploads nothing.
+`model_test.py` builds a catalog around it on localhost -- the full model at `sing/model-1` and a
+small synthetic light one at `sing/model-101` -- and runs the production download code against it on
+the Mac (ASan/UBSan): the catalog fetched, a corrupted `model.mil` refused by its checksum, a cancel
+keeping the files that landed whole (the server sees them not asked for again), the install, a
+download left running by one process and picked up by the next, and removal. A full light-bundle
+download still needs a matching local fixture and device verification.
 
 ## Model provenance
 
 The current full-screen view, lyrics host, header, footer, controls and hosting controller names are
 present in the user-supplied Spotify **9.1.94** IPA. No Spotify binary or lyrics are committed.
-
-The production bundle's pinned manifest and provenance are documented in
-[Vitrine's model card](https://huggingface.co/My-Name-Is-Jeff/vitrine-sing).
 
 Attribution: Mel-Band RoFormer by Ju-Chiang Wang, Wei-Tsung Lu and Minz Won; the vocal checkpoint
 by KimberleyJensen; lucidrains' BS-RoFormer implementation; ZFTurbo training code; the conversion

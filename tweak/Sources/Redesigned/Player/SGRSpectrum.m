@@ -23,6 +23,15 @@ static uint32_t sg_from[SGRSpectrumBands], sg_to[SGRSpectrumBands];   // bins, t
 // Published.
 static _Atomic(float) sg_levels[SGRSpectrumBands];
 static _Atomic(uint64_t) sg_generation;
+static atomic_bool sg_wanted;    // whether anything is showing; until it is, the feed does nothing
+static atomic_bool sg_restart;   // set beside wanted, honored by the feed on the render thread's side
+
+// The last kWaveSamples samples, appended as they come in, for the waveform the shaders draw. The
+// render thread writes it, any thread reads it; a reader can catch it halfway through a copy, which
+// nothing drawn can show.
+static float sg_wave[SGRSpectrumWaveSamples];
+static uint32_t sg_waveAt;
+static _Atomic(uint64_t) sg_waveGeneration;
 
 void SGRSpectrumPrepare(void) {
     if (atomic_load(&sg_prepared)) return;
@@ -73,7 +82,22 @@ static void analyse(void) {
 
 void SGRSpectrumFeed(const float *samples, uint32_t count, double sampleRate) {
     if (!samples || sampleRate <= 0 || !atomic_load_explicit(&sg_prepared, memory_order_acquire)) return;
+    if (!atomic_load_explicit(&sg_wanted, memory_order_relaxed)) return;
+    // The restart the setter asked for, done here on the render thread's own side of the rings.
+    if (atomic_exchange(&sg_restart, false)) {
+        memset(sg_wave, 0, sizeof sg_wave);
+        sg_waveAt = 0;
+        sg_rate = 0;
+        sg_at = sg_sinceLast = sg_filled = 0;
+        memset(sg_ring, 0, sizeof sg_ring);
+    }
     if (sampleRate != sg_rate) setRate(sampleRate);
+    // The waveform first, from the caller's own pointer, before the analysis walk moves it.
+    for (uint32_t i = 0; i < count; i++) {
+        sg_wave[sg_waveAt] = samples[i];
+        sg_waveAt = (sg_waveAt + 1) & (SGRSpectrumWaveSamples - 1);
+    }
+    atomic_fetch_add_explicit(&sg_waveGeneration, 1, memory_order_release);
     while (count) {
         uint32_t run = count;
         if (run > kSize - sg_at) run = kSize - sg_at;
@@ -90,6 +114,19 @@ void SGRSpectrumFeed(const float *samples, uint32_t count, double sampleRate) {
             if (sg_filled >= kSize) analyse();
         }
     }
+}
+
+void SGRSpectrumSetWanted(BOOL wanted) {
+    atomic_store(&sg_wanted, wanted);
+    // Coming back on: the rings read as silence until real samples land, so the feed starts them
+    // over on the render thread's side rather than drawing the join.
+    if (wanted) atomic_store(&sg_restart, true);
+}
+
+uint64_t SGRSpectrumWave(float out[SGRSpectrumWaveSamples]) {
+    uint64_t generation = atomic_load_explicit(&sg_waveGeneration, memory_order_acquire);
+    for (uint32_t i = 0; i < SGRSpectrumWaveSamples; i++) out[i] = sg_wave[(sg_waveAt + i) & (SGRSpectrumWaveSamples - 1)];
+    return generation;
 }
 
 uint64_t SGRSpectrumRead(float levels[SGRSpectrumBands]) {

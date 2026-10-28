@@ -11,14 +11,23 @@
 #import <stdint.h>
 
 enum { SGRSpectrumBands = 24 };
+// The waveform's length, a power of two (SGRSpectrum.m folds it round).
+enum { SGRSpectrumWaveSamples = 256 };
 // What a band reads with nothing in it, and the least SGRSpectrumRead hands out.
 #define SGRSpectrumFloor (-100.0f)
 
 // Makes the FFT's tables. Repeat calls do nothing. Lives as long as the process: the render thread may be in
 // SGRSpectrumFeed at any time.
 void SGRSpectrumPrepare(void);
-// Samples, mono, at `sampleRate`. A new rate starts the window over. Does nothing before SGRSpectrumPrepare.
+// Samples, mono, at `sampleRate`. A new rate starts the window over. Nothing is analyzed until
+// SGRSpectrumSetWanted has asked for it. Does nothing before SGRSpectrumPrepare.
 void SGRSpectrumFeed(const float *samples, uint32_t count, double sampleRate);
+// Whether the sound is analyzed at all: YES while a view is showing, so nothing is spent on the FFT
+// for nobody. Coming back on starts the rings over.
+void SGRSpectrumSetWanted(BOOL wanted);
 // The last levels into `levels`, low band first; answers how many analyses there have been, so a caller can
 // tell when nothing new came (paused, or the tap never ran).
 uint64_t SGRSpectrumRead(float levels[SGRSpectrumBands]);
+// The last SGRSpectrumWaveSamples samples, oldest first; answers a generation of its own, which moves
+// with every buffer fed.
+uint64_t SGRSpectrumWave(float out[SGRSpectrumWaveSamples]);

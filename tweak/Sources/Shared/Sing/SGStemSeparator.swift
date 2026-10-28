@@ -44,7 +44,7 @@ actor SGStemSeparator {
               input.shape == shape, output.shape == shape,
               (input.dataType == .float32 || input.dataType == .float16),
               (output.dataType == .float32 || output.dataType == .float16) else { throw SGStemError.invalidModel }
-        // The Vitrine Core ML export declares float16 but accepts this float32 input tensor.
+        // The Core ML export declares float16 but accepts this float32 input tensor.
         let tensor = try MLMultiArray(shape: shape, dataType: .float32)
         guard tensor.strides.map(\.intValue) == Self.strides else { throw SGStemError.invalidInput }
         self.tensor = tensor

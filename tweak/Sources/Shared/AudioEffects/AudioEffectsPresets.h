@@ -6,6 +6,13 @@
 //
 // Main thread, except where a function says otherwise.
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+
+// The two pages (AudioEffectsPresetsPage.m), pushed from the Audio effects page's last card.
+UIViewController *SGDSPPresetsPage(void);
+UIViewController *SGDSPHeadphonesPage(void);
+// What the Headphones row reads out: the correction in use, or None.
+NSString *SGDSPHeadphoneSummary(void);
 
 // The user's presets, by name, each the spotifyglass.dsp.* keys as they were saved. Outside the dsp.
 // prefix, so a preset never holds the presets.
@@ -17,8 +24,15 @@
 // it is: the correction belongs to the headphones, not to the taste. Loading any preset, or applying a
 // headphone, turns the effects' master switch on too, so the pick is heard.
 NSArray<NSString *> *SGDSPBuiltInPresetNames(void);
+NSString *SGDSPBuiltInPresetCategory(NSInteger index); // Sound or Listening, for grouping the rows
 NSString *SGDSPBuiltInPresetDetail(NSInteger index);   // the effects it turns on, for the row's subtitle
 void SGDSPLoadBuiltInPreset(NSInteger index);
+
+// The door a preset's settings come through, the built-ins' and the community's (AudioEffectsCommunity.m)
+// both: the Graphic EQ kept, everything else reset, then the upstream keys ("eq", "eq.gains" as one
+// "g;g;..." line, "bass.gain", "convolver"...) into the dsp keys through the setters, clamped as the
+// pages' own changes are, and the master switch on. Keys the mod has no answer for are left out.
+void SGDSPLoadPresetSettings(NSDictionary<NSString *, id> *settings);
 
 // A user's preset is everything: every spotifyglass.dsp.* key but the master switch, Graphic EQ included.
 NSArray<NSString *> *SGDSPUserPresetNames(void);   // sorted

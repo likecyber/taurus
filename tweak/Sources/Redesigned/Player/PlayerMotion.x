@@ -42,9 +42,12 @@
 #import "Shared/Player/SGLastTrack.h"
 #import "Shared/Player/SpeedPitch.h"
 #import "Player.h"
+#import "SGRShader.h"
 
 NSNotificationName const SGRPlayerBlurOpacityDidChangeNotification = @"spotifyglass.redesign.player.blurOpacityDidChange";
 static NSString *const kLyricsBlurByTrackKey = @"spotifyglass.redesign.player.lyricsBlurByTrack";
+// The clip output of the view playing now, for the shaders' clip input (SGRShader.h's provider).
+static AVPlayerItemVideoOutput *sg_liveOutput;
 
 // Where the clip starts dissolving into its foot, as a share of its height.
 static const CGFloat kFootFrom = 0.9;
@@ -136,6 +139,7 @@ static NSString *currentLyricsBlurTrack(void);
 
 @implementation SGRPlayerMotionView {
     AVQueuePlayer *_player;
+    AVPlayerItemVideoOutput *_videoOutput;   // the shaders' clip input reads this
     AVPlayerLooper *_looper;
     UIView *_picture;   // the clip over its foot, faded in as one
     CALayer *_still;    // the poster, with the video drawn over it
@@ -295,7 +299,16 @@ static UIViewPropertyAnimator *setBlurIntensity(UIVisualEffectView *view, UIView
     _player = [AVQueuePlayer new];
     _player.muted = YES;
     _player.preventsDisplaySleepDuringVideoPlayback = NO;
-    _looper = [AVPlayerLooper playerLooperWithPlayer:_player templateItem:[AVPlayerItem playerItemWithURL:file]];
+    AVPlayerItem *item = [AVPlayerItem playerItemWithURL:file];
+    // The shaders' clip input reads the frame being played; one output per item answers it.
+    AVPlayerItemVideoOutput *output = [[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:@{
+        (id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA),
+        (id)kCVPixelBufferWidthKey: @720, (id)kCVPixelBufferHeightKey: @1280,
+    }];
+    [item addOutput:output];
+    _videoOutput = output;
+    sg_liveOutput = output;
+    _looper = [AVPlayerLooper playerLooperWithPlayer:_player templateItem:item];
     _clip.player = _player;
     [self setNeedsLayout];
     [self updateMotion];
@@ -812,6 +825,12 @@ void SGRPlayerMenuSetBackground(SGRPlayerBackgroundKind kind) {
 %ctor {
     if (!SGRedesignedUI()) return;
     sg_videos = [NSHashTable weakObjectsHashTable];
+    // The shaders' clip input: the motion player's own output answers, per clip (playFile keeps the
+    // live one in the file-scope static the block reads).
+    SGRShaderSetClipPixelBufferProvider(^CVPixelBufferRef {
+        AVPlayerItemVideoOutput *output = sg_liveOutput;
+        return output ? [output copyPixelBufferForItemTime:[output itemTimeForHostTime:CACurrentMediaTime()]] : nil;
+    });
     // Here rather than on the clip's view, which is gone while they hold it off: the track is walked again
     // as either changes. The power state is reported off the main thread, which must not wait for main
     // (AGENTS.md), so the observer takes it where it is posted and hops.

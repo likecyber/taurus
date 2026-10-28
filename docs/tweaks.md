@@ -25,6 +25,8 @@
                                 Xcode project), merge-appintents.py (the mod's intents and shortcuts into Spotify's), insert-dylib.py (a load command into
                                 Spotify's widget), install.sh (sign + install), record-trees.py, record-session.py,
                                 dump-log.sh, extract-flags.py
+    chroma-lab/                 the shader lab: analysis of the closed upstream mod's compiled dylibs, and the
+                                generator for the Visualizer's built-in shaders (gen-shader-builtins.py). Gitignored
     trees/                      recorded view trees, one per screen; the input for every new hook. trees/clean/ holds
                                 the numbered snapshots per screen of record-session.py, taken of Spotify as it came
     plist/                      Info.plist overrides merged into the app (turns UIDesignRequiresCompatibility off)
@@ -77,12 +79,36 @@ Shared:
                   Hub JSON (AdHubs.x) and the feeds (Feeds.m), Premium pop-ups dropped (AdPopups.x), and the responses
                   rewritten on the way in (AdNetwork.x, Premium.m over the protobuf walker in Protobuf.m), with crossfade
                   and automix switched on in the player core and crossfade's switch kept in step with its slider (Crossfade.x)
+    Catalog/      the asset catalogs (SGCatalog.h): one folder per kind on the catalog server -- fonts, audio, shaders,
+                  lyrics-shaders, lockscreen, sing -- each a catalog.json listing every file's size and SHA-256, and the
+                  files themselves. SGCatalogFetch answers a kind's JSON from the kept copy at once and the server's when
+                  it lands; SGCatalogFile downloads one file, checks it, and serves the copy already on disk when that
+                  one is right. The server is SGCatalogBase in SGCatalog.h, the catalog repository's raw files; every
+                  consumer of the catalogs (Fonts, AudioEffects, Sing, the Visualizer's shaders) goes through here
+    LockCard/     the lock screen's lyric card (SGCardEngine.h): a style -- CSS plus an HTML template plus the song's
+                  data -- rendered into a frame natively, no web view. The engine is a CSS subset (the properties,
+                  selectors, units and functions the builtins and the catalog's styles actually use: flex, cqw/cqh,
+                  calc(), var(), gradients, filters, ::before/::after, text-wrap balance, ...), a mustache template
+                  over the card's data (title, artist, prev/line/next with their words and times, translation, safe
+                  areas, --fit's auto-shrink), a cascade, a flex layout and a Core Graphics painter. Three builtins
+                  ship in the binary (Classic, Vinyl, Messages); the lockscreen catalog brings more. Chosen on Lyrics
+                  → Lock screen card (a page of styles, previewed by the engine itself) or the Lyrics card row by the
+                  Lyrics style on the Lock screen page; while one is chosen, the Lyrics view's clips draw the card
+                  (LyricsArtwork.x) instead of the native text, holding one still per line. The harness
+                  (harness/lockcard) renders every style to PNGs on the Mac
     Privacy/      telemetry blocking and its counters
     Downloads/    Mod Settings > Downloads and its runtime companion bridge. Spotify's own download controls use
                   the companion dylib and guarded executable patches; without the companion, the page reports
                   Downloads as unavailable
     ArtistBlock/  tracks by blocked artists skipped as they start (ArtistSkip.x), the list and the Blocked artists page under Player
     Flags/        Spotify's remote-config flags: the provider hook, the generated table, the All flags page and the Labs page
+    Fonts/        the app's font (Fonts.h, Fonts.x): one hook on UIFont's face lookups makes the chosen family what
+                  Spotify draws with. The Font page's Built in and More fonts sections list what iOS carries; Your fonts
+                  imports files from Files (FontImport.m, Core Text registering them for this process and Fonts.x again
+                  at each launch); the Catalog section (FontCatalog.m) lists the fonts catalog's families, a tap
+                  downloading every file checked against the catalog's sizes and SHA-256s, registering them the same
+                  way, and choosing them as a family -- so bold and italic come with them. The license text rides
+                  along and stays on disk
     Gestures/     the double tap zones on the player: the grid, what each cell does, the recognizer (each look hooks it on)
     Lyrics/       the lyrics engine for the redesign's Apple Music style lyrics and the lock screen: lines read from
                   color-lyrics and the player's clock (KaraokeSource.x), words timed by estimate inside Spotify's line
@@ -108,7 +134,9 @@ Shared:
                   for it and the next, and the player's card-loading timeout flag is forced to its 5 s maximum while a
                   source is on
     LockScreenLyrics/ the artist-name replacement in system Now Playing, and the full-screen lyric clips,
-                       shown as the standalone Lyrics style over blurred cover artwork
+                       shown as the standalone Lyrics style over blurred cover artwork. With a card style
+                       chosen (Shared/LockCard), the clips draw that card instead of the native text, one
+                       still frame per line, and take no motion composite under them
     LockScreenArtwork/ the track's Canvas or its album's Apple Music cover as the lock screen's animated
                   artwork, from iOS 26 (Apple takes an MPMediaItemAnimatedArtwork under one of
                   MPNowPlayingInfoCenter's animated artwork keys, and the mod puts one there through a second
@@ -147,19 +175,15 @@ Shared:
                   Sing diagnostic identifies a missing source unit, unsupported format, unverified read-ahead layout,
                   or graph change when attachment fails. Boundary tests are in harness/audio/ and harness/sing/
     Sing/         the local Core ML separator, source-domain audio adapter, worker and player lifecycle, from iOS 18. Core ML
-                  uses Vitrine's Neural Engine model in the foreground and its warm CPU model in the background. The audible
+                  uses the catalog's full model in the foreground and its light model in the background. The audible
                   clock follows emitted source samples while delayed audio drains and never reports ahead of Spotify's
                   source clock. Model loading overlaps source capture;
                   verified continuous next-track PCM keeps its worker and reserve across a natural transition.
-                  Redesigned/Lyrics owns the Now Playing microphone control and Mod Settings' Karaoke page. The voice
-                  model (about 201 MiB) is not in the IPA: SGSingModel.m downloads My-Name-Is-Jeff/vitrine-sing's
-                  separator-ane.mlmodelc in a
-                  background URL session, checks each against a size and a SHA-256 pinned in the code, and moves
-                  them into Application Support/spoti.pw/Sing only when all are right (SingModel.x reconnects at
-                  launch). Karaoke can optionally ignore thermal and memory warnings; the default retains both
-                  safeguards. AirPlay remains local playback and is processed after its route change; Spotify
-                  Connect, whose audio plays on another device, is not. Tested against harness/sing/ (the download
-                  against a local server, model_test.py)
+                  Redesigned/Lyrics owns the Now Playing microphone control and Mod Settings' Karaoke page. The models are
+                  not in the IPA: SGSingModel.m reads the sing catalog (Shared/Catalog) for each version's files -- every
+                  one carried with a size and a SHA-256 the catalog checks on the way in -- and moves them into
+                  Application Support/spoti.pw/Sing only when all are right (SingModel.x reconnects at launch). A copy of
+                  the catalog as it ships is compiled in, so the sizes and hashes are known before the first fetch.
                   Spatial voice can place the vocals relative to head motion, with distance, room, and instrument
                   width controls under Karaoke; it stays off until enabled and yields to spatial audio on the route.
     Player/       the player's open and close announced (PlayerEvents.x), what the player is doing read through
@@ -178,7 +202,12 @@ Shared:
                   Apple's Reverb2 unit, libbs2b and EEL2 (vendor/audio). Settings apply as they change, on a queue of
                   its own; the file effects read their files from Documents/spoti.pw/Audio effects
                   (AudioEffectsFiles.m). Tested on the Mac against harness/audio-effects/, the hook in the simulator
-                  against its sim/
+                  against its sim/. The presets page's Built in section carries the catalog's compiled-in set
+                  (AudioEffectsPresets.m, each entry named and summarised, its settings mapped onto the dsp keys); the
+                  Community section under it (AudioEffectsCommunity.m) lists the audio catalog's presets, a pick
+                  fetching the files it names -- an impulse response, a DDC table, a Liveprog script -- into the file
+                  libraries and then applying the settings through the same door as the built-ins. A pick of either
+                  turns the master switch on; what was applied before the first pick is kept as Before presets
     Haptics/      Vibrations (Haptics.h lists its files): a tap of UIKit's feedback generators for the player's and the now
                   playing bar's controls, the scrubber's tenths and ends, cover swipes, gestures and the lyrics page's tap to
                   seek, at the strength set for them (ControlHaptics.x, SGFeedback.m); and Music Haptics, Core Haptics
@@ -248,6 +277,29 @@ Redesigned:
                   Spotify's normal cover, including when Animated uses Fill as its fallback. Player settings let the
                   user choose Still, Colors, Fluid, Visualiser or Fill, with Fill as the default, for when Canvas is
                   unavailable or cannot play.
+                  The Visualiser background draws the chosen shader (SGRShader.h, SGRShaderView.m): a Metal fragment
+                  fed one frame of the song -- the spectrum and the waveform on a 128x2 sound texture, the cover as a
+                  texture, the Canvas clip (PlayerMotion.x's own video output, through a pixel-buffer cache), the
+                  typeset lyrics (LyricsShaders/), the shader's own last frame beside it, the clock and the position,
+                  and the cover's colours.
+                  Three shaders are compiled in (SGRShaderBuiltins.m, generated by the shader lab's script); the rest come
+                  from the shaders catalog (Shared/Catalog), each entry a Metal source with a manifest of fps, render
+                  scale and adjustable params, downloaded the first time it is drawn. A catalog source is renamed to
+                  this tree's entry-point spelling as it is loaded, so the renderer looks for one pair of names. The Player page's Shader row
+                  lists what can run, and Shader settings holds the chosen one's params: sliders, switches, and a
+                  colour page per colour. Without Metal the Visualiser falls back to the two spectrum hills (PlayerVisualiser.m).
+                  The lyrics-carrying styles draw through the GPU lyrics engine (Redesigned/Player/LyricsShaders/): a
+                  Core Text typesetter packs the karaoke lines into word, row and line tables and a glyph atlas
+                  exactly as the linemap Metal pass reads them, draws the visible lines into the lyrics texture on
+                  the frame's own command buffer, and keeps a three-line text strip for the shaders' text input. Two
+                  of its styles are compiled in (Poster and Cut, SGRShaderBuiltins.m's neighbours in the lab's
+                  extraction); the lyrics-shaders catalog brings the rest, each with a font family resolved through
+                  the font catalog. Their params live beside the compiled-in ones on the same Shader settings page.
+                  The sound arrives through the pipeline's last stage (SpectrumTap.x): the output unit's post-render
+                  buffer mixed to mono and fed to SGRSpectrum (SGRSpectrum.h), which publishes the 24 bands and the
+                  last 256 samples, and analyzes nothing while no view is showing (SGRSpectrumSetWanted). The beat
+                  the shaders see is the spectrum's leap over the frames before it, watched in SGRShaderView.m; the
+                  hills get the same bands, normalised against the loudest band of late.
                   Player settings expose separate opacity sliders for its artwork and Canvas/lyrics blur layers.
                   While lyrics are open over Animated, background blur is on by default and remembered per track;
                   the Player settings and ⋯ menu control it, alongside the per-song lyrics source. The Mini player
@@ -346,6 +398,14 @@ logs are not shared unless the user explicitly chooses Copy or Share.
 
 ## Mod Settings
 
+### Chroma-aligned shader settings
+
+The redesigned look follows Chroma's split between the player Visualizer and the lyrics page. **Player → Visualizer → Shader** contains Bars, Nebula, Halo, and the two lyric-aware player shaders Poster and Cut, plus the ordinary `shaders` catalog; **Shuffle shaders each song** is available beside it. The downloadable `lyrics-shaders` catalog is deliberately not merged into that picker: **Lyrics → Look** selects the active lyrics style, while **Lyrics → Browse shaders** and **Lyrics → My shaders** list the separate catalog styles. Lyrics shaders use their own line/background ABI and parameter store, and ordinary lyrics remain the fallback when no lyrics style is available. Taurus's Premium/ads/privacy and Downloads pages remain shared Taurus features and are unchanged by this UI alignment.
+
+The settings audit removed the orphaned redesigned volume-thumb key. The native `playerLyricsOnly` key remains because `PlayerDeclutter.x` still reads and writes it. No Chroma commercial account/Plus gate is copied.
+
+Lyrics shader settings stay separate from Player → Visualizer: Browse shaders searches catalog metadata, each detail page shows the style information before an explicit download, downloaded files appear in My shaders, favourites remain visible offline, and Remove download deletes only the cached `<uuid>.json`. Parameter rows use `SGRLyricsShaderParamValues` and `SGRLyricsShaderSetParamValue` under the lyrics-specific store. The player host no longer has a lyrics-catalog rendering branch; only Poster and Cut use the player frame's Lyrics tail.
+
 Mod Settings, opened by holding Home on the tab bar or from the
 last row of Spotify's Settings, sorts every
 setting by the part of Spotify it changes, so a part's glass, its hide switches and its flags sit on
@@ -356,7 +416,8 @@ is set. Redesigned UI is the one switch between the two looks (see Layers): it g
 (Settings/SGGlowSwitch), its ⓘ says what it changes, and flipping it offers to restart Spotify.
 The pages show only what the stored look has: a page opened after flipping the switch already shows
 what the restart will bring. In the redesign Karaoke comes next, on a card of its own: Sing's switch and its
-voice model's download (Redesigned/Lyrics/SingSettings.m), with Off, On, No model or the download's percentage
+voice model's download from the asset catalog (Redesigned/Lyrics/SingSettings.m) -- about 467 MB full or
+38 MB light, each file checked against the catalog's size and SHA-256 -- with Off, On, No model or the download's percentage
                 beside the row, "Needs iOS 18" below iOS 18. Then a card of parts. Navbar: the tab editor of the stored look,
 each with its own list of tabs. Player: Gestures and Blocked artists (with the count on the row), which work
 with either look. In the redesigned look Appearance holds the profile-photo toggle and accent colour;
@@ -366,12 +427,17 @@ Regular shelf headings, including Jump back in and Recently played, stay visible
 The redesigned Player page also has independent Show Sing button and Show Translate button
 switches, the six background styles (Still, Colors, Fluid, Animated, Visualiser and Fill), an Animated fallback
 choice (Still, Colors, Fluid, Visualiser or Fill, default Fill), per-song lyrics blur and lyrics-source choices,
-background opacity sliders for the artwork and each player blur layer, and its volume controls.
+background opacity sliders for the artwork and each player blur layer, and its volume controls. With the
+Visualiser as the background, a Shader row picks what draws: the three built-ins (Bars, Nebula, Halo), then
+the shaders catalog's, downloaded the first time they are drawn, and a Shader settings page holds the chosen
+shader's sliders, switches and colour pages, applying as they move.
 Lyrics: the ordered list of lyrics sources, lyrics for every track,
 naming the source in the redesign, artist-name replacement on the lock screen,
 and glass lyrics in the native look; in the redesign also
 which of the lyrics, their pronunciation and their translation is set largest, Genius meaning marks (which can
-be hidden without losing the hold-on-a-line meaning sheet), and the translation's language. Player controls
+be hidden without losing the hold-on-a-line meaning sheet), and the translation's language. A Lock screen card
+row opens the page of styled lyric cards -- the three built-ins and the catalog's, each previewed by the engine
+itself -- that the lock screen's Lyrics view draws when one is picked. Player controls
 include independent portrait and landscape auto-hide switches for the lyrics screen. Lock Screen: its controls and, under Artwork, the full-screen style selector and ordered style hierarchy:
 Canvas (the track's Canvas or the album's Apple Music animated cover), Lyrics over the blurred cover,
 Fill artwork, Colourful (Every Song's moving-cover treatment), and Default (iOS's full album artwork).
@@ -382,7 +448,8 @@ instead. Turning it back on makes the saved Lyrics choice available again.
 The first enabled style is used when star cycling is off; the star can cycle through enabled styles.
 If Canvas has no usable animation, the next enabled style is used for that track only, and Canvas is
 checked again on the next track. The redesigned player's ⋯ menu also selects the active lock-screen style.
-A "Needs iOS 26" row appears below that; artist-name and lock-screen lyrics can be kept exclusive by the setting.
+A Lyrics card row beside the Lyrics style picks the styled card the Lyrics view draws instead of its native
+text: Off, the built-ins, or the catalog's, applying to the next line. A "Needs iOS 26" row appears below that; artist-name and lock-screen lyrics can be kept exclusive by the setting.
 Audio effects follows Lock Screen, which appears between Lyrics and Audio effects on the root page.
 In the native look also Now playing bar (its device button and its flags), Queue & devices, and
 Spotify's own player screen (artwork background, glass header buttons, Disable Canvas and the sheet,
@@ -405,7 +472,8 @@ shows, Lyrics, Queue or Control menu, both
 applying straight away, the row reading out the view or Off. Audio effects, in either look (Shared/AudioEffects/AudioEffectsPage.m):
 the effects' switch with what the engine is doing under it, then a card per effect, each opening out into its
 sliders, choices, curve or file library while its switch is on, everything applying as it changes; the row reads
-out Off, On or how many effects are on. Home & Library, in the native look only:
+out Off, On or how many effects are on. The last card holds the reset and the two pages beside it: Presets
+(built-in, community and the user's own) and Headphones (AutoEq's corrections per output). Home & Library, in the native look only:
 the Gradient page (the wash behind the top of Home in one of eight colours, at three strengths and
 four heights) and the Home flags, the parts of Home to hide including the DJ button and badge, the
 playlist header, buttons and pills to hide, and the Library flags. Then Premium, ads & privacy
