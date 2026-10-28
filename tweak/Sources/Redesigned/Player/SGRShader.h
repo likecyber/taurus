@@ -5,11 +5,13 @@
 #import <UIKit/UIKit.h>
 #import <CoreVideo/CoreVideo.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 #define SGRKeyVisualiserShader       @"spotifyglass.redesign.visualizer.shader"  // a shader id, "builtin:bars" until set
 #define SGRKeyVisualiserShaderParams @"spotifyglass.redesign.visualizer.shader.params" // { shader id: { param id: value } }
 #define SGRKeyVisualiserShuffle      @"spotifyglass.redesign.visualizer.shuffle"
 
-extern NSNotificationName const _Nonnull SGRShaderDidChangeNotification;
+extern NSNotificationName const SGRShaderDidChangeNotification;
 
 // One shader of the catalog or one of the compiled-in ones, telling what it is drawn as and what it
 // wants to be fed. The objects are made once and answer for the process's life.
@@ -63,12 +65,12 @@ BOOL SGRShaderMetalAvailable(void);
 
 // Its Metal source: the compiled-in ones at once, a catalog entry fetched on the first ask and kept.
 // `done` runs on the main queue, with nil and a reason when it could not be had.
-void SGRShaderLoadSource(SGRShaderInfo *shader, void (^done)(NSString *source));
+void SGRShaderLoadSource(SGRShaderInfo * _Nullable shader, void (^done)(NSString * _Nullable source));
 
 // The values the user has set on a shader's params, as the manifest holds them: a number for a float,
 // a BOOL for a toggle, a hex string for a colour. Unset params answer their defaults.
 NSDictionary<NSString *, id> *SGRShaderParamValues(SGRShaderInfo *shader);
-void SGRShaderSetParamValue(SGRShaderInfo *shader, NSString *paramID, id value);
+void SGRShaderSetParamValue(SGRShaderInfo * _Nullable shader, NSString *paramID, id _Nullable value);
 
 // The Player page's two pages: the shader picker, and the chosen shader's params. `owner` is the page
 // they are pushed from, so picking a shader can come back to it.
@@ -78,4 +80,6 @@ UIViewController *SGRShaderParamsPage(UIViewController *owner);
 // Where the Canvas clip's frames come from: a block answering the pixel buffer being played now
 // (retained for the caller), or nil when nothing plays. PlayerMotion.x installs its player's output
 // here at launch; the shaders with a "clip" input draw it, and without it they draw the cover.
-void SGRShaderSetClipPixelBufferProvider(CVPixelBufferRef _Nullable (^ _Nullable)(void) provider);
+void SGRShaderSetClipPixelBufferProvider(CVPixelBufferRef _Nullable (^ _Nullable provider)(void));
+
+NS_ASSUME_NONNULL_END
