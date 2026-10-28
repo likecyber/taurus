@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 
 @class SGRArtworkField;
+@protocol SGRVisualiserShowing;
 @class SGModSection;
 
 // The field behind the player.
@@ -96,7 +97,7 @@ CGFloat SGRPlayerClipDim(CGFloat luminance, BOOL contrast, BOOL lyrics);
 
 BOOL SGRPlayerVisualiserShowing(void);
 void SGRPlayerVisualiserUpdate(void);
-UIView *SGRPlayerVisualiserPreview(void);
+UIView<SGRVisualiserShowing> *SGRPlayerVisualiserPreview(void);
 void SGRPlayerMenuSetBackground(SGRPlayerBackgroundKind kind);
 
 void SGRPlayerVanish(UIView *view);
