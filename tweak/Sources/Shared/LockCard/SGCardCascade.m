@@ -657,15 +657,17 @@ static void computeBox(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx c
             sides4(SGCExpandVars(decl.value, vars) ?: @[], ctx, percentW, &t, &r, &b, &l);
             s.padding = UIEdgeInsetsMake(t, l, b, r);
         }
+        UIEdgeInsets padding = s.padding;
         for (NSString *side in @[@"top", @"right", @"bottom", @"left"]) {
             BOOL ok = NO;
             CGFloat value = lenOf([NSString stringWithFormat:@"padding-%@", side], percentW, &ok);
             if (!ok) continue;
-            if ([side isEqualToString:@"top"]) s.padding.top = value;
-            if ([side isEqualToString:@"bottom"]) s.padding.bottom = value;
-            if ([side isEqualToString:@"left"]) s.padding.left = value;
-            if ([side isEqualToString:@"right"]) s.padding.right = value;
+            if ([side isEqualToString:@"top"]) padding.top = value;
+            if ([side isEqualToString:@"bottom"]) padding.bottom = value;
+            if ([side isEqualToString:@"left"]) padding.left = value;
+            if ([side isEqualToString:@"right"]) padding.right = value;
         }
+        s.padding = padding;
     }
     {
         SGCDecl *decl = box.decls[@"margin"];
@@ -679,6 +681,7 @@ static void computeBox(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx c
                 s.marginLeftAuto = s.marginRightAuto = YES;
             }
         }
+        UIEdgeInsets margin = s.margin;
         for (NSString *side in @[@"top", @"right", @"bottom", @"left"]) {
             SGCDecl *decl = box.decls[[NSString stringWithFormat:@"margin-%@", side]];
             if (!decl) continue;
@@ -686,15 +689,16 @@ static void computeBox(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx c
             BOOL auto_ = tokens.count == 1 && tokens[0].type == SGCTokIdent && [tokens[0].text.lowercaseString isEqualToString:@"auto"];
             CGFloat value = 0;
             if (auto_) {
-                if ([side isEqualToString:@"left"]) { s.marginLeftAuto = YES; s.margin.left = 0; }
-                if ([side isEqualToString:@"right"]) { s.marginRightAuto = YES; s.margin.right = 0; }
+                if ([side isEqualToString:@"left"]) { s.marginLeftAuto = YES; margin.left = 0; }
+                if ([side isEqualToString:@"right"]) { s.marginRightAuto = YES; margin.right = 0; }
             } else if (SGCLenOrPercent(tokens, ctx, percentW, &value)) {
-                if ([side isEqualToString:@"top"]) s.margin.top = value;
-                if ([side isEqualToString:@"bottom"]) s.margin.bottom = value;
-                if ([side isEqualToString:@"left"]) s.margin.left = value;
-                if ([side isEqualToString:@"right"]) s.margin.right = value;
+                if ([side isEqualToString:@"top"]) margin.top = value;
+                if ([side isEqualToString:@"bottom"]) margin.bottom = value;
+                if ([side isEqualToString:@"left"]) margin.left = value;
+                if ([side isEqualToString:@"right"]) margin.right = value;
             }
         }
+        s.margin = margin;
     }
 
     // insets: the shorthand plus the four longhands; auto clears what an outer sheet set
@@ -732,23 +736,21 @@ static void computeBox(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx c
         }
     }
 
-    auto setSize = ^(NSString *prop, CGFloat *out, BOOL *set, BOOL vertical) {
+    CGFloat (^sizeValue)(NSString *, CGFloat, BOOL *) = ^CGFloat(NSString *prop, CGFloat base, BOOL *set) {
         SGCDecl *decl = box.decls[prop];
-        if (!decl) return;
+        if (!decl) return 0;
         NSArray<SGCTok *> *tokens = SGCExpandVars(decl.value, vars) ?: @[];
-        if (tokens.count == 1 && tokens[0].type == SGCTokIdent) return;   // auto, max-content and friends stay unset
+        if (tokens.count == 1 && tokens[0].type == SGCTokIdent) return 0;
         CGFloat value = 0;
-        if (SGCLenOrPercent(tokens, ctx, vertical ? percentH : percentW, &value)) {
-            *out = value;
-            *set = YES;
-        }
+        if (SGCLenOrPercent(tokens, ctx, base, &value)) { *set = YES; return value; }
+        return 0;
     };
-    setSize(@"width", &s.width, &s.widthSet, NO);
-    setSize(@"height", &s.height, &s.heightSet, YES);
-    setSize(@"max-width", &s.maxWidth, &s.maxWSet, NO);
-    setSize(@"max-height", &s.maxHeight, &s.maxHSet, YES);
-    setSize(@"min-width", &s.minWidth, &s.minWSet, NO);
-    setSize(@"min-height", &s.minHeight, &s.minHSet, YES);
+    s.width = sizeValue(@"width", percentW, &s.widthSet);
+    s.height = sizeValue(@"height", percentH, &s.heightSet);
+    s.maxWidth = sizeValue(@"max-width", percentW, &s.maxWSet);
+    s.maxHeight = sizeValue(@"max-height", percentH, &s.maxHSet);
+    s.minWidth = sizeValue(@"min-width", percentW, &s.minWSet);
+    s.minHeight = sizeValue(@"min-height", percentH, &s.minHSet);
 
     // flex
     SGCDecl *flex = box.decls[@"flex"];
