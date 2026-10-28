@@ -72,7 +72,7 @@ void SGRLyricsShaderDrawCatalogStyle(id<MTLCommandBuffer> buffer, id<MTLTexture>
 // TextReady saying rows are there at all.
 id<MTLTexture> SGRLyricsShaderLyricsTexture(void);
 id<MTLTexture> SGRLyricsShaderTextTexture(void);
-void SGRLyricsShaderTextAspect(float out[4]);
+void SGRLyricsShaderTextAspect(float * _Nonnull out);
 BOOL SGRLyricsShaderTextReady(void);
 
 // Fills the lyrics tail of a style frame: the 1920 bytes the compiled-in styles compile
