@@ -21,6 +21,8 @@
 #import "Redesigned/Kit/SGRKit.h"
 #import "LyricsShaders/LyricsShaders.h"
 #import "Shared/Player/PlayerState.h"
+#import "Shared/Player/PlayerEvents.h"
+#import "Player.h"
 #import "SGRSpectrum.h"
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
@@ -433,9 +435,9 @@ static UIViewPropertyAnimator *setBlurIntensity(UIVisualEffectView *view, UIView
     // The user's values for the shader's params, a float4 row at a time; a colour sits on the three
     // floats its slot names, a toggle and a float on the one float of theirs. The lyrics styles keep
     // theirs in the lyrics engine's store.
-    NSDictionary<NSString *, id> *values = [shader.identifier hasPrefix:@"builtin:poster"]
-        || [shader.identifier hasPrefix:@"builtin:cut"]
-        ? SGRLyricsShaderParamValues(shader.identifier)
+    NSDictionary<NSString *, id> *values = [_shader.identifier hasPrefix:@"builtin:poster"]
+        || [_shader.identifier hasPrefix:@"builtin:cut"]
+        ? SGRLyricsShaderParamValues(_shader.identifier)
         : SGRShaderParamValues(_shader);
     float slots[kParamSlots] = {0};
     for (NSDictionary *param in _shader.params) {
@@ -607,7 +609,7 @@ static UIViewPropertyAnimator *setBlurIntensity(UIVisualEffectView *view, UIView
     }
 
     memcpy(_frameBuffer.contents, frame, sizeof *frame);
-    if (_usesLyrics || _usesText) SGRLyricsShaderFillStyleFrame(_frameBuffer, kFrameBytes);
+    if (_usesLyrics || _usesText) SGRLyricsShaderFillStyleFrame(_frameBuffer.contents, kFrameBytes);
     MTLRenderPassDescriptor *pass = [MTLRenderPassDescriptor renderPassDescriptor];
     pass.colorAttachments[0].texture = made;
     pass.colorAttachments[0].loadAction = MTLLoadActionDontCare;
