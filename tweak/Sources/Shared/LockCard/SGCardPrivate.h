@@ -136,8 +136,10 @@ NSArray<SGCRule *> *SGCParseCSS(NSString *css, NSInteger sheet, NSInteger firstO
 @class SGCMatchNode;
 BOOL SGCRuleMatches(SGCRule *rule, SGCMatchNode *node);
 @interface SGCMatchNode : NSObject
-+ (instancetype)nodeWithTag:(NSString *)tag classes:(NSArray<NSString *> *)classes attrs:(NSDictionary *)attrs pseudo:(NSString *)pseudo lang:(NSString *)lang;
-@property (copy) NSString *tag, *pseudo, *lang;
++ (instancetype)nodeWithTag:(NSString *)tag classes:(NSArray<NSString *> *)classes attrs:(NSDictionary *)attrs pseudo:(NSString * _Nullable)pseudo lang:(NSString * _Nullable)lang;
+@property (copy) NSString *tag;
+@property (copy) NSString * _Nullable pseudo;
+@property (copy) NSString * _Nullable lang;
 @property (copy) NSArray<NSString *> *classes;
 @property (copy) NSDictionary *attrs;
 @property (weak) SGCMatchNode *parent, *prev;   // prev: the previous in-flow element sibling
@@ -155,7 +157,7 @@ BOOL SGCRuleMatches(SGCRule *rule, SGCMatchNode *node);
 @property (copy) NSDictionary *attrs;
 @property (strong) NSMutableArray<SGCBox *> *children;      // element boxes, in order
 @property (strong) NSMutableArray *inlineItems;             // mixed: SGCBox or NSString, this box's inline content
-@property (strong) SGCBox *before, *after;                  // ::before / ::after, boxes of their own
+@property (strong, nullable) SGCBox *before, *after;        // ::before / ::after, boxes of their own
 @property BOOL isPseudo;
 @property BOOL isAtomic;               // an inline-block child that rides a paragraph as one box
 // the cascade's winners for this box, longhand name -> decl, plus every custom property

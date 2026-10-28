@@ -826,7 +826,7 @@ static void computeBox(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx c
         else if ([word isEqualToString:@"space-between"]) s.justify = SGCPackBetween;
         else if ([word isEqualToString:@"space-around"] || [word isEqualToString:@"space-evenly"]) s.justify = SGCPackAround;
     }
-    auto alignOf = ^(NSArray<SGCTok *> *tokens, SGCAlign *out) {
+    void (^alignOf)(NSArray<SGCTok *> *, SGCAlign *) = ^(NSArray<SGCTok *> *tokens, SGCAlign *out) {
         if (tokens.count != 1) return;
         NSString *word = tokens[0].text.lowercaseString;
         if ([word isEqualToString:@"flex-start"] || [word isEqualToString:@"start"]) *out = SGCAlignStart;
@@ -834,11 +834,16 @@ static void computeBox(SGCStyle *s, SGCBox *box, NSDictionary *vars, SGCLenCtx c
         else if ([word isEqualToString:@"flex-end"] || [word isEqualToString:@"end"]) *out = SGCAlignEnd;
         else if ([word isEqualToString:@"stretch"] || [word isEqualToString:@"normal"]) *out = SGCAlignStretch;
     };
-    if (box.decls[@"align-items"]) alignOf(SGCExpandVars(box.decls[@"align-items"].value, vars) ?: @[], &s.align);
+    if (box.decls[@"align-items"]) {
+        SGCAlign align = s.align;
+        alignOf(SGCExpandVars(box.decls[@"align-items"].value, vars) ?: @[], &align);
+        s.align = align;
+    }
     if (box.decls[@"align-self"]) {
         s.selfAlignSet = YES;
-        s.selfAlign = s.align;
-        alignOf(SGCExpandVars(box.decls[@"align-self"].value, vars) ?: @[], &s.selfAlign);
+        SGCAlign selfAlign = s.align;
+        alignOf(SGCExpandVars(box.decls[@"align-self"].value, vars) ?: @[], &selfAlign);
+        s.selfAlign = selfAlign;
     }
     if (box.decls[@"flex-wrap"]) s.wrap = identIs(SGCExpandVars(box.decls[@"flex-wrap"].value, vars) ?: @[], @"wrap");
 
@@ -1204,7 +1209,8 @@ static void cascadeBox(SGCBox *box, SGCMatchNode *parent, NSInteger childIndex, 
 
     NSInteger index = 0;
     for (SGCBox *child in box.children) {
-        cascadeBox(child, node, index++, index == (NSInteger)box.children.count - 1,
+        NSInteger childIndex = index++;
+        cascadeBox(child, node, childIndex, childIndex == (NSInteger)box.children.count - 1,
                    custom, box.style, rules, ctx);
     }
 }
